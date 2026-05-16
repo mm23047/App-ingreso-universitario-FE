@@ -13,6 +13,16 @@
             "runtimeExecutable": "C:\\Users\\estua\\AppData\\Local\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
             "preLaunchTask": "lanzarBrowserSync",
             "postDebugTask": "detenerBrowserSync"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Mocha Test",
+            "url": "http://localhost:3000/",
+            "webRoot": "${workspaceFolder}/src",
+            "runtimeExecutable": "C:\\Users\\estua\\AppData\\Local\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+            "preLaunchTask": "lanzarMocha",
+            "postDebugTask": "detenerBrowserSync"
         }
     ]
 }

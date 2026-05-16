@@ -13,6 +13,17 @@
         },
 
         {
+            "label": "lanzarMocha",
+            "type": "shell",
+            "command": "browser-sync start --server ./ -f \"**/*\" ./ --no-open",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "isBackground": true,
+            "problemMatcher": {}
+        },
+
+        {
             "label": "detenerBrowserSync",
             "type": "shell",
             "command": "echo ${input:terminate}",
