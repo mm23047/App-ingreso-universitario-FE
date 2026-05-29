@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruebas del Controlador - JornadaController</title>
+    <link rel="stylesheet" href="lib/mocha/mocha.css">
+</head>
+<body>
+    <div id="mocha"></div>
+    <script src="lib/mocha/mocha.js"></script>
+    <script src="lib/chai/register-assert.js"></script>
+    <script src="lib/chai/register-expect.js"></script>
+    <script src="lib/chai/register-should.js"></script>
+    <script type="module">
+        import mocha from './lib/mocha/mocha.js';
+        
+        mocha.setup('bdd');
+
+        // Importar las pruebas
+        import('./jornada_controller.unit.test.js').then(() => {
+            mocha.run();
+        });
+    </script>
+</body>
+</html>
