@@ -66,8 +66,8 @@
 </head>
 <body>
     <div class="contenedor">
-        <h1>🔄 Contador Automático - Web Component</h1>
-        
+        <h1>Contador Automático - Web Component</h1>
+
         <div class="componentes">
             <div class="demo">
                 <h2>Rápido (100ms)</h2>
@@ -108,7 +108,7 @@
     </div>
 
     <script type="module">
-        import './js/components/contador.js';
+        import '../js/components/contador.js';
 
         document.addEventListener('contador-cambio', (event) => {
             console.log('Contador cambió a:', event.detail.valor);
@@ -116,4 +116,3 @@
     </script>
 </body>
 </html>
-

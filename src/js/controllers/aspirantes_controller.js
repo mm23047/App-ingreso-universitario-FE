@@ -1,0 +1,68 @@
+import AspirantesDao from '../dao/aspirantes_dao.js';
+import { store } from '../state/app_state.js';
+
+// Campos que deben llegar del formulario (nombres reales del backend)
+const CAMPOS_REQUERIDOS = ['nombres', 'apellidos', 'dui', 'correo'];
+
+class AspirantesController {
+    constructor() {
+        this.aspirantesDao = new AspirantesDao();
+    }
+
+    /**
+     * Valida los datos del formulario antes de enviarlos al backend.
+     * @returns {{ valido: boolean, mensaje?: string }}
+     */
+    validarDatos(data) {
+        for (const campo of CAMPOS_REQUERIDOS) {
+            if (!data[campo] || String(data[campo]).trim() === '') {
+                return { valido: false, mensaje: `El campo "${campo}" es requerido` };
+            }
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
+            return { valido: false, mensaje: 'El correo electrónico no tiene un formato válido' };
+        }
+        // DUI formato El Salvador: 00000000-0
+        if (!/^\d{8}-\d$/.test(data.dui)) {
+            return { valido: false, mensaje: 'El DUI debe tener el formato 00000000-0' };
+        }
+        return { valido: true };
+    }
+
+    /**
+     * Registra un nuevo aspirante.
+     * data debe contener los campos reales del backend:
+     *   nombres, apellidos, fechaNacimiento, dui, correo, usaSillaRuedas?
+     */
+    async registrar(data) {
+        const validacion = this.validarDatos(data);
+        if (!validacion.valido) {
+            document.querySelector('app-toast')?.show(validacion.mensaje, 4000, 'warning');
+            throw new Error(validacion.mensaje);
+        }
+
+        store.loading = true;
+        try {
+            const aspirante = await this.aspirantesDao.crear({
+                ...data,
+                usaSillaRuedas: data.usaSillaRuedas ?? false
+            });
+            store.aspirante = aspirante;
+            document.querySelector('app-toast')?.show(
+                'Registro exitoso. ¡Bienvenido!', 3000, 'success'
+            );
+            return aspirante;
+        } catch (error) {
+            console.error('Error al registrar aspirante:', error);
+            const msg = error.message.includes('409')
+                ? 'Ya existe un registro con ese DUI o correo'
+                : `Error al registrar: ${error.message}`;
+            document.querySelector('app-toast')?.show(msg, 5000, 'error');
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
+}
+
+export default AspirantesController;

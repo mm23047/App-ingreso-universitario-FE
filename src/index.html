@@ -1,8 +1,81 @@
-<html>
-    <head>
-        <title>Nuevo Ingreso</title>
-    </head>
-    <body>
-        <h1>Nuevo Ingreso Universidad de El Salvador</h1>
-    </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E3A8A">
+    <meta name="description" content="Sistema de Ingreso Universitario">
+
+    <title>Ingreso Universitario</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../icons/icon-192.png">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/grid-layout.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+    <!-- Overlay de carga global -->
+    <div id="loading-overlay" role="status" aria-label="Cargando...">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notificaciones toast -->
+    <app-toast></app-toast>
+
+    <!-- Navegación principal -->
+    <header class="no-print" style="background: var(--color-primary); color: white; padding: var(--space-md) 0;">
+        <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
+            <h1 style="font-size:1.25rem; color:white; margin:0;">Ingreso Universitario</h1>
+            <nav>
+                <a href="#/registro"    style="color:white; margin-left:var(--space-md);">Registro</a>
+                <a href="#/carreras"    style="color:white; margin-left:var(--space-md);">Carreras</a>
+                <a href="#/turnos"      style="color:white; margin-left:var(--space-md);">Turnos</a>
+                <a href="#/inscripcion" style="color:white; margin-left:var(--space-md);">Inscripción</a>
+                <a href="#/examen"      style="color:white; margin-left:var(--space-md);">Examen</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenido dinámico de la SPA -->
+    <main id="app-content" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+        <p class="text-muted text-center">Cargando aplicación...</p>
+    </main>
+
+    <footer class="no-print" style="background:var(--color-primary-dark); color:white; text-align:center; padding:var(--space-md); margin-top:auto;">
+        <p style="margin:0; font-size:.85rem;">Universidad de El Salvador &mdash; Sistema de Ingreso</p>
+    </footer>
+
+    <!-- Módulo principal de la SPA -->
+    <script type="module">
+        import { store, subscribe } from './js/state/app_state.js';
+        import router from './js/router.js';
+        import './js/components/notificacion-toast.js';
+        import './js/components/contador.js';
+
+        /* Conectar loading del store al overlay */
+        const overlay = document.getElementById('loading-overlay');
+        subscribe('loading', (isLoading) => {
+            overlay.classList.toggle('active', isLoading);
+        });
+
+        /* Registrar Service Worker */
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker
+                .register('../sw.js')
+                .then(reg => console.log('[SW] Registrado, scope:', reg.scope))
+                .catch(err => console.warn('[SW] No se pudo registrar:', err));
+        }
+
+        /* Escuchar cambios de ruta para actualizaciones futuras */
+        window.addEventListener('route-changed', ({ detail }) => {
+            console.log('[Router] Ruta activa:', detail.ruta, '→', detail.nombre);
+        });
+    </script>
+
+</body>
 </html>

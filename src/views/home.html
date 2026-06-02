@@ -1,0 +1,172 @@
+<!-- ============================================================
+     VISTA: HOME  —  fragmento cargado por el router en #/
+     No es un documento HTML completo. Va dentro de <main id="app-content">.
+     ============================================================ -->
+
+<style>
+    /* ── Hero ── */
+    .home-hero {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+        color: var(--color-text-inverse);
+        border-radius: var(--radius-lg);
+        padding: var(--space-2xl) var(--space-xl);
+        text-align: center;
+    }
+
+    .home-hero h1 {
+        color: var(--color-text-inverse);
+        font-size: 2.25rem;
+        margin-bottom: var(--space-md);
+    }
+
+    .home-hero p {
+        font-size: 1.125rem;
+        opacity: .9;
+        max-width: 600px;
+        margin: 0 auto var(--space-xl);
+    }
+
+    /* ── Pasos ── */
+    .paso-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--transition), transform var(--transition);
+    }
+
+    .paso-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-3px);
+    }
+
+    .paso-numero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: var(--color-primary);
+        color: white;
+        border-radius: var(--radius-full);
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: var(--space-md);
+    }
+
+    .paso-card h3 {
+        color: var(--color-primary-dark);
+        margin-bottom: var(--space-sm);
+    }
+
+    .paso-card p {
+        color: var(--color-text-muted);
+        font-size: .9rem;
+        margin: 0;
+    }
+
+    /* ── Sección contador demo ── */
+    .demo-section {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        text-align: center;
+    }
+
+    .demo-section h2 {
+        color: var(--color-primary-dark);
+        margin-bottom: var(--space-sm);
+    }
+
+    .demo-section p {
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-lg);
+        font-size: .9rem;
+    }
+</style>
+
+<!-- ── 1. HERO ── -->
+<section class="home-hero mb-lg">
+    <h1>Sistema de Ingreso Universitario</h1>
+    <p>
+        Bienvenido al proceso oficial de admisión. Registra tus datos,
+        selecciona tu carrera y turno de examen, rinde la prueba en línea
+        y consulta tus resultados, todo desde aquí.
+    </p>
+    <a href="#/registro" class="btn btn-secondary" style="font-size:1.1rem; padding: var(--space-md) var(--space-2xl);">
+        Comenzar inscripción
+    </a>
+</section>
+
+<!-- ── 2. PASOS DEL PROCESO ── -->
+<section class="mb-lg">
+    <h2 class="text-center mb-md" style="color: var(--color-primary-dark);">¿Cómo funciona el proceso?</h2>
+
+    <div class="grid grid-auto-md">
+
+        <div class="paso-card">
+            <div class="paso-numero">1</div>
+            <h3>Regístrate</h3>
+            <p>Completa tu perfil con datos personales: nombre, DUI, fecha de nacimiento y correo electrónico.</p>
+        </div>
+
+        <div class="paso-card">
+            <div class="paso-numero">2</div>
+            <h3>Elige tu carrera</h3>
+            <p>Selecciona la carrera universitaria a la que deseas postularte de la oferta académica disponible.</p>
+        </div>
+
+        <div class="paso-card">
+            <div class="paso-numero">3</div>
+            <h3>Selecciona un turno</h3>
+            <p>Escoge el horario que mejor se adapte a tu disponibilidad para rendir el examen de admisión.</p>
+        </div>
+
+        <div class="paso-card">
+            <div class="paso-numero">4</div>
+            <h3>Rinde el examen</h3>
+            <p>Responde la prueba de admisión en línea dentro del tiempo asignado para tu turno.</p>
+        </div>
+
+        <div class="paso-card">
+            <div class="paso-numero">5</div>
+            <h3>Consulta resultados</h3>
+            <p>Revisa tu puntaje y el estado de tu admisión una vez que el proceso haya concluido.</p>
+        </div>
+
+    </div>
+</section>
+
+<!-- ── 3. DEMOSTRACIÓN WEB COMPONENT ── -->
+<section class="demo-section mb-lg">
+    <h2>Aspirantes registrados hoy</h2>
+    <p>Contador en tiempo real (componente Web reutilizable con Shadow DOM, template y slot)</p>
+
+    <div style="display: flex; gap: var(--space-xl); justify-content: center; flex-wrap: wrap;">
+
+        <app-contador intervalo="2000" inicial="0">
+            <span slot="label"><h3 style="color: var(--color-primary);">Mañana</h3></span>
+        </app-contador>
+
+        <app-contador intervalo="3000" inicial="0">
+            <span slot="label"><h3 style="color: var(--color-secondary);">Tarde</h3></span>
+        </app-contador>
+
+    </div>
+</section>
+
+<!-- ── 4. CTA SECUNDARIO ── -->
+<section class="grid grid-cols-1" style="text-align: center; padding: var(--space-xl) 0;">
+    <div>
+        <p style="font-size:1.1rem; color: var(--color-text-muted); margin-bottom: var(--space-lg);">
+            ¿Listo para comenzar? El proceso toma menos de 10 minutos.
+        </p>
+        <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+            <a href="#/registro"    class="btn btn-primary">Registrarme ahora</a>
+            <a href="#/carreras"    class="btn btn-outline">Ver carreras disponibles</a>
+        </div>
+    </div>
+</section>

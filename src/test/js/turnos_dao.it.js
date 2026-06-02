@@ -1,28 +1,28 @@
 import { expect } from './lib/chai/index.js';
-import JornadaDao from '../../js/control/jornada_dao.js';
+import TurnosDao from '../../js/dao/turnos_dao.js';
 
-describe('JornadaDao - Pruebas de Integración', () => {
-    let jornadaDao;
+describe('TurnosDao - Pruebas de Integración', () => {
+    let turnosDao;
 
     beforeEach(() => {
-        jornadaDao = new JornadaDao();
+        turnosDao = new TurnosDao();
     });
 
     describe('Integración con servidor real', () => {
-        it('debe conectar al servidor y obtener todas las jornadas', async function() {
+        it('debe conectar al servidor y obtener todos los turnos', async function() {
             this.timeout(5000);
             try {
-                const resultado = await jornadaDao.obtenerJornadas();
+                const resultado = await turnosDao.obtenerTurnos();
                 expect(resultado).to.be.an('array');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
             }
         });
 
-        it('debe intentar obtener una jornada por ID del servidor', async function() {
+        it('debe intentar obtener un turno por ID del servidor', async function() {
             this.timeout(5000);
             try {
-                const resultado = await jornadaDao.obtenerJornadaPorId(1);
+                const resultado = await turnosDao.obtenerTurnoPorId(1);
                 if (resultado) {
                     expect(resultado).to.be.an('object');
                     expect(resultado.id).to.equal(1);
@@ -34,17 +34,17 @@ describe('JornadaDao - Pruebas de Integración', () => {
     });
 
     describe('Estructura de URL para integración', () => {
-        it('debe construir URL correcta para obtener todas las jornadas', () => {
-            const urlEsperada = 'http://localhost:9080/IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/jornada';
-            expect(jornadaDao.BASE_URL).to.equal(urlEsperada);
+        it('debe construir URL correcta para obtener todos los turnos', () => {
+            const urlEsperada = 'http://localhost:9080/IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/turnos';
+            expect(turnosDao.BASE_URL).to.equal(urlEsperada);
         });
 
         it('debe incluir /v1/ en la ruta', () => {
-            expect(jornadaDao.BASE_URL).to.include('/v1/');
+            expect(turnosDao.BASE_URL).to.include('/v1/');
         });
 
-        it('debe terminar con /jornada', () => {
-            expect(jornadaDao.BASE_URL).to.match(/\/jornada$/);
+        it('debe terminar con /turnos', () => {
+            expect(turnosDao.BASE_URL).to.match(/\/turnos$/);
         });
     });
 
@@ -52,7 +52,7 @@ describe('JornadaDao - Pruebas de Integración', () => {
         it('debe rechazar cuando no puede conectar al servidor', async function() {
             this.timeout(5000);
             try {
-                await jornadaDao.obtenerJornadas();
+                await turnosDao.obtenerTurnos();
             } catch (error) {
                 expect(error).to.exist;
             }
@@ -60,7 +60,7 @@ describe('JornadaDao - Pruebas de Integración', () => {
 
         it('debe lanzar error cuando se solicita sin ID', async () => {
             try {
-                await jornadaDao.obtenerJornadaPorId();
+                await turnosDao.obtenerTurnoPorId();
                 expect.fail('Debería lanzar error');
             } catch (error) {
                 expect(error.message).to.include('requerido');

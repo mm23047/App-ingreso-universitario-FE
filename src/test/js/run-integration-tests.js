@@ -5,7 +5,7 @@ async function inicializarPruebasIntegracion() {
     }
     mocha.setup('bdd');
     try {
-        await import('./jornada_dao.it.js');
+        await import('./turnos_dao.it.js');
         mocha.run();
     } catch (error) {
         console.error('Error al cargar pruebas de integración:', error);

@@ -5,7 +5,7 @@ async function inicializarPruebas() {
     }
     mocha.setup('bdd');
     try {
-        await import('./jornada_dao.unit.test.js');
+        await import('./turnos_dao.unit.test.js');
         mocha.run();
     } catch (error) {
         console.error('Error al cargar pruebas:', error);

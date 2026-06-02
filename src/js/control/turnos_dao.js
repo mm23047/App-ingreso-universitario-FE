@@ -1,12 +1,12 @@
 import DefaultDao from './default_dao.js';
 
-class JornadaDao extends DefaultDao {
+class TurnosDao extends DefaultDao {
     constructor() {
         super();
-        this.BASE_URL += 'jornada';
+        this.BASE_URL += 'turnos';
     }
 
-    async obtenerJornadas() {
+    async obtenerTurnos() {
         try {
             const respuesta = await fetch(this.BASE_URL, { method: 'GET' });
             if (respuesta.status === 200) {
@@ -14,14 +14,14 @@ class JornadaDao extends DefaultDao {
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
-            console.error('Error al obtener jornadas:', error);
+            console.error('Error al obtener turnos:', error);
             throw error;
         }
     }
 
-    async obtenerJornadaPorId(id) {
+    async obtenerTurnoPorId(id) {
         if (!id) {
-            throw new Error('El ID de la jornada es requerido');
+            throw new Error('El ID del turno es requerido');
         }
         try {
             const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'GET' });
@@ -30,10 +30,10 @@ class JornadaDao extends DefaultDao {
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
-            console.error('Error al obtener jornada:', error);
+            console.error('Error al obtener turno:', error);
             throw error;
         }
     }
 }
 
-export default JornadaDao;
+export default TurnosDao;
