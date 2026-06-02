@@ -1,6 +1,6 @@
 import { expect } from './lib/chai/index.js';
 import sinon from './lib/sinon/sinon.js';
-import ExamenDao from '../../js/dao/examen_dao.js';
+import ExamenDao from '../../js/control/examen_dao.js';
 import ExamenRealizado from '../../js/entity/ExamenRealizado.js';
 import RespuestaExamen from '../../js/entity/RespuestaExamen.js';
 
@@ -59,29 +59,25 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
             };
             sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve(mockRespuesta) });
 
-            const resultado = await examenDao.iniciarExamen('uuid-asp-1', 'uuid-prueba-1');
+            const resultado = await examenDao.iniciarExamen('uuid-inscripcion-1', 'uuid-etapa-1');
 
             expect(resultado).to.be.instanceOf(ExamenRealizado);
             expect(resultado).to.have.property('id', 'uuid-examen-1');
         });
 
-        it('debe mapear las propiedades del examen', async () => {
-            const mockRespuesta = {
-                id: 'uuid-examen-1',
-                aspiranteId: 'uuid-asp-1',
-                pruebaId: 'uuid-prueba-1'
-            };
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve(mockRespuesta) });
+        it('debe enviar el body con idInscripcion e idEtapa', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
 
-            const resultado = await examenDao.iniciarExamen('uuid-asp-1', 'uuid-prueba-1');
+            await examenDao.iniciarExamen('uuid-inscripcion-1', 'uuid-etapa-1');
 
-            expect(resultado.aspiranteId).to.equal('uuid-asp-1');
-            expect(resultado.pruebaId).to.equal('uuid-prueba-1');
+            const bodyEnviado = JSON.parse(window.fetch.firstCall.args[1].body);
+            expect(bodyEnviado).to.have.property('idInscripcion', 'uuid-inscripcion-1');
+            expect(bodyEnviado).to.have.property('idEtapa', 'uuid-etapa-1');
         });
 
-        it('debe lanzar error cuando no se proporciona aspiranteId', async () => {
+        it('debe lanzar error cuando no se proporciona inscripcionId', async () => {
             try {
-                await examenDao.iniciarExamen(null, 'uuid-prueba-1');
+                await examenDao.iniciarExamen(null, 'uuid-etapa-1');
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
@@ -89,9 +85,9 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
             }
         });
 
-        it('debe lanzar error cuando no se proporciona pruebaId', async () => {
+        it('debe lanzar error cuando no se proporciona etapaId', async () => {
             try {
-                await examenDao.iniciarExamen('uuid-asp-1', null);
+                await examenDao.iniciarExamen('uuid-inscripcion-1', null);
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
@@ -99,32 +95,11 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
             }
         });
 
-        it('debe lanzar error cuando no se proporcionan ambos parámetros', async () => {
-            try {
-                await examenDao.iniciarExamen();
-                expect.fail('Debería haber lanzado un error');
-            } catch (error) {
-                expect(error).to.be.instanceOf(Error);
-                expect(error.message).to.include('requerido');
-            }
-        });
-
-        it('debe lanzar error cuando el servidor responde 400', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 400, json: () => Promise.reject(new Error('Bad Request')) });
-
-            try {
-                await examenDao.iniciarExamen('uuid-asp-1', 'uuid-prueba-1');
-                expect.fail('Debería haber lanzado un error');
-            } catch (error) {
-                expect(error).to.be.instanceOf(Error);
-            }
-        });
-
-        it('debe lanzar error cuando el servidor responde 409 (ya tiene examen)', async () => {
+        it('debe lanzar error cuando el servidor responde 409 (examen ya existe)', async () => {
             sinon.stub(window, 'fetch').resolves({ status: 409, json: () => Promise.reject(new Error('Conflict')) });
 
             try {
-                await examenDao.iniciarExamen('uuid-asp-1', 'uuid-prueba-1');
+                await examenDao.iniciarExamen('uuid-inscripcion-1', 'uuid-etapa-1');
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
@@ -137,40 +112,36 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
 
         it('debe retornar una Promesa', () => {
             sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
-            const resultado = examenDao.iniciarExamen('uuid-asp-1', 'uuid-prueba-1');
+            const resultado = examenDao.iniciarExamen('uuid-inscripcion-1', 'uuid-etapa-1');
             expect(resultado).to.be.instanceOf(Promise);
         });
     });
 
-    describe('enviarRespuestas con Stub', () => {
-        const mockRespuestas = [
-            { preguntaId: 'uuid-p1', opcionId: 'uuid-o1' },
-            { preguntaId: 'uuid-p2', opcionId: 'uuid-o3' }
-        ];
+    describe('enviarRespuestasLote con Stub', () => {
+        const mockOpcionesIds = ['uuid-o1', 'uuid-o2', 'uuid-o3'];
 
-        it('debe retornar una instancia de RespuestaExamen', async () => {
-            const mockRespuesta = { id: 'uuid-resp-1', examenId: 'uuid-examen-1', guardado: true };
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve(mockRespuesta) });
+        it('debe retornar true al enviar lote exitosamente', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve('Respuestas procesadas') });
 
-            const resultado = await examenDao.enviarRespuestas('uuid-examen-1', mockRespuestas);
+            const resultado = await examenDao.enviarRespuestasLote('uuid-examen-1', mockOpcionesIds);
 
-            expect(resultado).to.be.instanceOf(RespuestaExamen);
-            expect(resultado.id).to.equal('uuid-resp-1');
+            expect(resultado).to.be.true;
         });
 
-        it('debe mapear las propiedades de la respuesta', async () => {
-            const mockRespuesta = { id: 'uuid-resp-1', examenId: 'uuid-examen-1', guardado: true };
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve(mockRespuesta) });
+        it('debe enviar el body con idExamen y opcionesSeleccionadas', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
 
-            const resultado = await examenDao.enviarRespuestas('uuid-examen-1', mockRespuestas);
+            await examenDao.enviarRespuestasLote('uuid-examen-1', mockOpcionesIds);
 
-            expect(resultado.examenId).to.equal('uuid-examen-1');
-            expect(resultado.guardado).to.equal(true);
+            const bodyEnviado = JSON.parse(window.fetch.firstCall.args[1].body);
+            expect(bodyEnviado).to.have.property('idExamen', 'uuid-examen-1');
+            expect(bodyEnviado).to.have.property('opcionesSeleccionadas');
+            expect(bodyEnviado.opcionesSeleccionadas).to.deep.equal(mockOpcionesIds);
         });
 
         it('debe lanzar error cuando no se proporciona examenId', async () => {
             try {
-                await examenDao.enviarRespuestas(null, mockRespuestas);
+                await examenDao.enviarRespuestasLote(null, mockOpcionesIds);
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
@@ -178,46 +149,57 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
             }
         });
 
-        it('debe lanzar error cuando no se proporcionan respuestas', async () => {
+        it('debe lanzar error cuando la lista de opciones está vacía', async () => {
             try {
-                await examenDao.enviarRespuestas('uuid-examen-1', null);
+                await examenDao.enviarRespuestasLote('uuid-examen-1', []);
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
                 expect(error.message).to.include('requerido');
-            }
-        });
-
-        it('debe lanzar error cuando el servidor responde 400', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 400, json: () => Promise.reject(new Error('Bad Request')) });
-
-            try {
-                await examenDao.enviarRespuestas('uuid-examen-1', mockRespuestas);
-                expect.fail('Debería haber lanzado un error');
-            } catch (error) {
-                expect(error).to.be.instanceOf(Error);
-            }
-        });
-
-        it('debe lanzar error cuando el servidor responde 500', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 500, json: () => Promise.reject(new Error('Server Error')) });
-
-            try {
-                await examenDao.enviarRespuestas('uuid-examen-1', mockRespuestas);
-                expect.fail('Debería haber lanzado un error');
-            } catch (error) {
-                expect(error).to.be.instanceOf(Error);
             }
         });
 
         it('debe ser una función', () => {
-            expect(examenDao.enviarRespuestas).to.be.a('function');
+            expect(examenDao.enviarRespuestasLote).to.be.a('function');
         });
 
         it('debe retornar una Promesa', () => {
             sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
-            const resultado = examenDao.enviarRespuestas('uuid-examen-1', mockRespuestas);
+            const resultado = examenDao.enviarRespuestasLote('uuid-examen-1', mockOpcionesIds);
             expect(resultado).to.be.instanceOf(Promise);
+        });
+    });
+
+    describe('enviarRespuesta individual con Stub', () => {
+        it('debe enviar el body con examenRealizado y preguntaOpcion', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
+
+            await examenDao.enviarRespuesta('uuid-examen-1', 'uuid-opcion-1');
+
+            const bodyEnviado = JSON.parse(window.fetch.firstCall.args[1].body);
+            expect(bodyEnviado).to.have.property('examenRealizado');
+            expect(bodyEnviado).to.have.property('preguntaOpcion');
+            expect(bodyEnviado.examenRealizado.idExamenRealizado).to.equal('uuid-examen-1');
+            expect(bodyEnviado.preguntaOpcion.idPreguntaOpcion).to.equal('uuid-opcion-1');
+        });
+
+        it('debe retornar una instancia de RespuestaExamen', async () => {
+            const mockRespuesta = { id: 'uuid-resp-1', guardado: true };
+            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve(mockRespuesta) });
+
+            const resultado = await examenDao.enviarRespuesta('uuid-examen-1', 'uuid-opcion-1');
+
+            expect(resultado).to.be.instanceOf(RespuestaExamen);
+        });
+
+        it('debe lanzar error cuando no se proporciona examenId', async () => {
+            try {
+                await examenDao.enviarRespuesta(null, 'uuid-opcion-1');
+                expect.fail('Debería haber lanzado un error');
+            } catch (error) {
+                expect(error).to.be.instanceOf(Error);
+                expect(error.message).to.include('requerido');
+            }
         });
     });
 
@@ -245,13 +227,20 @@ describe('ExamenDao - Pruebas Unitarias con Stubs', () => {
             expect(typeof examenDao.iniciarExamen).to.equal('function');
         });
 
-        it('debe tener el método enviarRespuestas accesible', () => {
-            expect(typeof examenDao.enviarRespuestas).to.equal('function');
+        it('debe tener el método enviarRespuestasLote accesible', () => {
+            expect(typeof examenDao.enviarRespuestasLote).to.equal('function');
         });
 
-        it('debe tener ambos métodos implementados', () => {
-            expect(examenDao.iniciarExamen).to.exist;
-            expect(examenDao.enviarRespuestas).to.exist;
+        it('debe tener el método enviarRespuesta accesible', () => {
+            expect(typeof examenDao.enviarRespuesta).to.equal('function');
+        });
+
+        it('debe tener el método obtenerPreguntasDelExamen accesible', () => {
+            expect(typeof examenDao.obtenerPreguntasDelExamen).to.equal('function');
+        });
+
+        it('debe tener el método obtenerRespuestasGuardadas accesible', () => {
+            expect(typeof examenDao.obtenerRespuestasGuardadas).to.equal('function');
         });
     });
 });

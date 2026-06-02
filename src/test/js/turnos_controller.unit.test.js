@@ -1,7 +1,7 @@
 import { expect } from './lib/chai/index.js';
 import sinon from './lib/sinon/sinon.js';
-import TurnosController from '../../js/controllers/turnos_controller.js';
-import TurnosDao from '../../js/dao/turnos_dao.js';
+import TurnosController from '../../js/control/turnos_controller.js';
+import TurnosDao from '../../js/control/turnos_dao.js';
 
 describe('TurnosController - Pruebas Unitarias', () => {
     let controller;

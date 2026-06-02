@@ -1,12 +1,13 @@
 import Opcion from './Opcion.js';
 
 // Entidad: BancoPregunta
-// Endpoint: GET /preguntas  (sin opciones embebidas)
-//           GET /preguntas/{id}/opciones  (opciones en endpoint aparte)
+// Endpoint: GET /preguntas?first=0&max=50  (sin filtro por prueba en backend actual)
+//           GET /preguntas/{id}/opciones
+// Para preguntas del examen activo usar ExamenDao.obtenerPreguntasDelExamen(examenId)
+//   → GET /examen_realizado/{id}/preguntas (devuelve PreguntasPorClave de la clave asignada)
 // Campos reales del backend (getters → JSON):
-//   idBancoPregunta (UUID), enunciado (el campo es "enunciado", NO "textoPregunta"), tema (nested, lazy)
-// NOTA: las opciones NO vienen embebidas en /preguntas — son un recurso separado.
-//       Si el objeto data incluye opciones (mocks o respuestas enriquecidas), se mapean.
+//   idBancoPregunta (UUID), enunciado (NO "textoPregunta"), tema (nested, lazy)
+// NOTA: las opciones NO vienen en /preguntas — son un recurso separado.
 export default class Pregunta {
     constructor(data = {}) {
         // PK: backend usa idBancoPregunta, tests usan id

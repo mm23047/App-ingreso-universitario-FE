@@ -1,7 +1,6 @@
-import AspirantesDao from '../dao/aspirantes_dao.js';
-import { store } from '../state/app_state.js';
+import AspirantesDao from './aspirantes_dao.js';
+import { store } from '../infra/app_state.js';
 
-// Campos que deben llegar del formulario (nombres reales del backend)
 const CAMPOS_REQUERIDOS = ['nombres', 'apellidos', 'dui', 'correo'];
 
 class AspirantesController {
@@ -9,10 +8,6 @@ class AspirantesController {
         this.aspirantesDao = new AspirantesDao();
     }
 
-    /**
-     * Valida los datos del formulario antes de enviarlos al backend.
-     * @returns {{ valido: boolean, mensaje?: string }}
-     */
     validarDatos(data) {
         for (const campo of CAMPOS_REQUERIDOS) {
             if (!data[campo] || String(data[campo]).trim() === '') {
@@ -22,18 +17,12 @@ class AspirantesController {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
             return { valido: false, mensaje: 'El correo electrónico no tiene un formato válido' };
         }
-        // DUI formato El Salvador: 00000000-0
         if (!/^\d{8}-\d$/.test(data.dui)) {
             return { valido: false, mensaje: 'El DUI debe tener el formato 00000000-0' };
         }
         return { valido: true };
     }
 
-    /**
-     * Registra un nuevo aspirante.
-     * data debe contener los campos reales del backend:
-     *   nombres, apellidos, fechaNacimiento, dui, correo, usaSillaRuedas?
-     */
     async registrar(data) {
         const validacion = this.validarDatos(data);
         if (!validacion.valido) {
@@ -48,9 +37,7 @@ class AspirantesController {
                 usaSillaRuedas: data.usaSillaRuedas ?? false
             });
             store.aspirante = aspirante;
-            document.querySelector('app-toast')?.show(
-                'Registro exitoso. ¡Bienvenido!', 3000, 'success'
-            );
+            document.querySelector('app-toast')?.show('Registro exitoso. ¡Bienvenido!', 3000, 'success');
             return aspirante;
         } catch (error) {
             console.error('Error al registrar aspirante:', error);

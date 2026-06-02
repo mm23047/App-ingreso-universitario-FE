@@ -1,0 +1,80 @@
+<!-- ============================================================
+     VISTA: SELECCIÓN DE CARRERA  (#/carreras)
+     Fragmento inyectado por el router en <main id="app-content">.
+     Controller: CarrerasController
+     DAO:        CarrerasDao  →  GET /carreras
+     Campos: idCarrera (String), nombreCatalogoCarrera (String)
+     ============================================================ -->
+
+<style>
+    .carrera-card {
+        cursor: pointer;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        background: var(--color-surface);
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .carrera-card:hover {
+        border-color: var(--color-primary-light);
+        box-shadow: var(--shadow-md);
+    }
+    .carrera-card.seleccionada {
+        border-color: var(--color-primary);
+        background: #EFF6FF;
+    }
+    .carrera-codigo {
+        font-size: .8rem;
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-xs);
+    }
+</style>
+
+<h2 class="mb-md" style="color: var(--color-primary-dark);">Selecciona tu carrera</h2>
+<p class="text-muted mb-lg">Elige la carrera universitaria a la que deseas postularte.</p>
+
+<div id="lista-carreras" class="grid-cards">
+    <p class="text-muted text-center">Cargando carreras...</p>
+</div>
+
+<div class="mt-lg" style="display: flex; justify-content: flex-end;">
+    <button id="btn-continuar" class="btn btn-primary" disabled>Continuar →</button>
+</div>
+
+<script type="module">
+    import CarrerasController from '../../control/carreras_controller.js';
+    import { navigate } from '../../infra/router.js';
+    import { store } from '../../infra/app_state.js';
+
+    const controller = new CarrerasController();
+    const lista      = document.getElementById('lista-carreras');
+    const btnCont    = document.getElementById('btn-continuar');
+
+    const renderCarreras = (carreras) => {
+        if (!carreras.length) {
+            lista.innerHTML = '<p class="text-muted text-center">No hay carreras disponibles.</p>';
+            return;
+        }
+        lista.innerHTML = carreras.map(c => `
+            <div class="carrera-card" data-id="${c.idCarrera}">
+                <p class="carrera-codigo">${c.idCarrera}</p>
+                <h3>${c.nombreCatalogoCarrera}</h3>
+            </div>
+        `).join('');
+
+        lista.querySelectorAll('.carrera-card').forEach(card => {
+            card.addEventListener('click', () => {
+                lista.querySelectorAll('.carrera-card').forEach(c => c.classList.remove('seleccionada'));
+                card.classList.add('seleccionada');
+                controller.seleccionarCarrera(card.dataset.id);
+                btnCont.disabled = false;
+            });
+        });
+    };
+
+    btnCont.addEventListener('click', () => navigate('/inscripcion'));
+
+    controller.cargarTodas().then(renderCarreras).catch(() => {
+        lista.innerHTML = '<p class="text-danger text-center">Error al cargar las carreras.</p>';
+    });
+</script>

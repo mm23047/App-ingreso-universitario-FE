@@ -52,10 +52,10 @@
 
     <!-- Módulo principal de la SPA -->
     <script type="module">
-        import { store, subscribe } from './js/state/app_state.js';
-        import router from './js/router.js';
-        import './js/components/notificacion-toast.js';
-        import './js/components/contador.js';
+        import { store, subscribe } from './js/infra/app_state.js';
+        import router from './js/infra/router.js';
+        import './js/boundary/components/notificacion-toast.js';
+        import './js/boundary/components/contador.js';
 
         /* Conectar loading del store al overlay */
         const overlay = document.getElementById('loading-overlay');
@@ -71,9 +71,28 @@
                 .catch(err => console.warn('[SW] No se pudo registrar:', err));
         }
 
-        /* Escuchar cambios de ruta para actualizaciones futuras */
+        /* Carga dinámica de vistas al cambiar ruta */
+        const appContent = document.getElementById('app-content');
+        const _cargarVista = async (nombre) => {
+            try {
+                const resp = await fetch(`./js/boundary/views/${nombre}.html`);
+                if (!resp.ok) throw new Error(`Vista "${nombre}" no encontrada`);
+                appContent.innerHTML = await resp.text();
+                // Ejecutar scripts inline del fragmento cargado
+                appContent.querySelectorAll('script[type="module"]').forEach(s => {
+                    const nuevo = document.createElement('script');
+                    nuevo.type = 'module';
+                    nuevo.textContent = s.textContent;
+                    s.replaceWith(nuevo);
+                });
+            } catch (err) {
+                console.error('[Router] Error al cargar vista:', err);
+                appContent.innerHTML = `<p class="text-danger text-center mt-lg">Error al cargar la página.</p>`;
+            }
+        };
+
         window.addEventListener('route-changed', ({ detail }) => {
-            console.log('[Router] Ruta activa:', detail.ruta, '→', detail.nombre);
+            _cargarVista(detail.nombre);
         });
     </script>
 

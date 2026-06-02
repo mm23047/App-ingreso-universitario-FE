@@ -1,5 +1,5 @@
 import { expect } from './lib/chai/index.js';
-import TurnosDao from '../../js/dao/turnos_dao.js';
+import TurnosDao from '../../js/control/turnos_dao.js';
 
 describe('TurnosDao - Pruebas de Integración', () => {
     let turnosDao;

@@ -45,7 +45,7 @@ export const ejecutarWorker = (url, options = {}) => {
 };
 
 /**
- * Termina el worker. Llámalo si la SPA se desmonta o ya no lo necesitas.
+ * Termina el worker cuando ya no se necesite.
  */
 export const terminarWorker = () => {
     if (_worker) {

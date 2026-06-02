@@ -2,6 +2,7 @@ const _initialState = {
     aspirante: null,
     carreraSeleccionada: null,
     turnoSeleccionado: null,
+    inscripcionActiva: null,
     examenActivo: null,
     notificaciones: [],
     loading: false,

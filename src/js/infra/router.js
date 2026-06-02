@@ -1,4 +1,4 @@
-import { store } from './state/app_state.js';
+import { store } from './app_state.js';
 
 export const RUTAS = {
     '/': 'home',

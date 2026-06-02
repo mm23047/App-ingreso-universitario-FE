@@ -1,0 +1,95 @@
+<!-- ============================================================
+     VISTA: REGISTRO DE ASPIRANTE  (#/registro)
+     Fragmento inyectado por el router en <main id="app-content">.
+     Controller: AspirantesController
+     DAO:        AspirantesDao  →  POST /aspirantes
+     Campos reales del backend: nombres, apellidos, fechaNacimiento (YYYY-MM-DD),
+                                dui (00000000-0), correo, usaSillaRuedas (boolean)
+     ============================================================ -->
+
+<style>
+    .registro-card {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+</style>
+
+<div class="registro-card card">
+    <div class="card-header">
+        <h2>Registro de Aspirante</h2>
+        <p class="text-muted">Completa todos los campos para crear tu perfil de ingreso.</p>
+    </div>
+
+    <form id="form-registro" novalidate>
+
+        <div class="grid grid-cols-2 gap-md">
+
+            <div class="form-group">
+                <label for="nombres">Nombres</label>
+                <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required>
+                <span class="form-error" id="error-nombres"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="apellidos">Apellidos</label>
+                <input type="text" id="apellidos" name="apellidos" placeholder="Ej. García López" required>
+                <span class="form-error" id="error-apellidos"></span>
+            </div>
+
+        </div>
+
+        <div class="grid grid-cols-2 gap-md mt-md">
+
+            <div class="form-group">
+                <label for="dui">DUI</label>
+                <input type="text" id="dui" name="dui" placeholder="00000000-0" maxlength="10" required>
+                <span class="form-error" id="error-dui"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="fechaNacimiento">Fecha de nacimiento</label>
+                <input type="date" id="fechaNacimiento" name="fechaNacimiento" required>
+                <span class="form-error" id="error-fechaNacimiento"></span>
+            </div>
+
+        </div>
+
+        <div class="form-group mt-md">
+            <label for="correo">Correo electrónico</label>
+            <input type="email" id="correo" name="correo" placeholder="tu@correo.com" required>
+            <span class="form-error" id="error-correo"></span>
+        </div>
+
+        <div class="form-group mt-md" style="flex-direction: row; align-items: center; gap: var(--space-sm);">
+            <input type="checkbox" id="usaSillaRuedas" name="usaSillaRuedas" style="width: auto;">
+            <label for="usaSillaRuedas" style="font-weight: normal;">Requiero espacio accesible para silla de ruedas</label>
+        </div>
+
+        <div class="mt-lg" style="display: flex; gap: var(--space-md); justify-content: flex-end;">
+            <button type="reset" class="btn btn-outline">Limpiar</button>
+            <button type="submit" class="btn btn-primary" id="btn-registrar">Crear perfil</button>
+        </div>
+
+    </form>
+</div>
+
+<script type="module">
+    import AspirantesController from '../../control/aspirantes_controller.js';
+    import { navigate } from '../../infra/router.js';
+
+    const controller = new AspirantesController();
+    const form = document.getElementById('form-registro');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const datos = Object.fromEntries(new FormData(form));
+        datos.usaSillaRuedas = form.usaSillaRuedas.checked;
+
+        try {
+            await controller.registrar(datos);
+            navigate('/carreras');
+        } catch (_) {
+            // El controller ya muestra el toast de error
+        }
+    });
+</script>

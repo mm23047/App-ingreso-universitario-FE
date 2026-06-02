@@ -1,6 +1,8 @@
 // Entidad: ExamenRealizado
-// Endpoint: /examenes  (NO /examen_realizado — verificar DAO)
-// POST /examenes espera DTO: { idInscripcion: UUID, idEtapa: UUID }
+// Endpoint: POST /examen_realizado  body: { idInscripcion: UUID, idEtapa: UUID }  → 201
+//           GET  /examen_realizado/{id}
+//           GET  /examen_realizado/{id}/preguntas  → preguntas de la clave asignada
+//           POST /examen_realizado/{id}/calificar  → solo proceso administrativo del backend
 // Campos reales de la respuesta JSON (getters → JSON):
 //   idExamenRealizado (UUID), inscripcionesPrueba (nested), claveExamen (nested),
 //   etapaAdmision (nested), puntajeFinal (BigDecimal, null hasta calificación),

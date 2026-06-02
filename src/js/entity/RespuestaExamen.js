@@ -1,7 +1,9 @@
 // Entidad: RespuestaExamen
-// Endpoint: /respuestas  (NO /respuestas_examen — verificar DAO)
-// POST /respuestas envía { examenRealizado: { idExamenRealizado }, preguntaOpcion: { idPreguntaOpcion } }
-// POST /respuestas/lote envía { idExamen: UUID, opcionesSeleccionadas: UUID[] }
+// Endpoint individual: POST /respuestas_examen
+//   body: { examenRealizado: { idExamenRealizado: UUID }, preguntaOpcion: { idPreguntaOpcion: UUID } }
+// Endpoint lote:       POST /respuestas_examen/lote
+//   body: { idExamen: UUID, opcionesSeleccionadas: [UUID] }
+// Consulta por examen: GET /respuestas_examen/examen/{idExamen}
 // Campos reales de la respuesta JSON (getters → JSON):
 //   idRespuestaExamen (UUID), examenRealizado (nested), preguntaOpcion (nested)
 export default class RespuestaExamen {

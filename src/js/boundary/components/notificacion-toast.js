@@ -18,7 +18,6 @@ _containerTemplate.innerHTML = `
             align-items: flex-end;
         }
 
-        /* Slot por defecto para contenido estático opcional */
         ::slotted(*) {
             pointer-events: auto;
         }
@@ -99,12 +98,6 @@ class NotificacionToast extends HTMLElement {
         this._wrapper = this.shadowRoot.querySelector('.toast-wrapper');
     }
 
-    /**
-     * Muestra un toast dinámico.
-     * @param {string} message   Texto a mostrar
-     * @param {number} duration  Milisegundos antes de desaparecer (0 = permanente)
-     * @param {'info'|'success'|'error'|'warning'} tipo
-     */
     show(message, duration = 3000, tipo = 'info') {
         const shadowItem = document.createElement('div');
         shadowItem.attachShadow({ mode: 'open' });
@@ -138,7 +131,6 @@ class NotificacionToast extends HTMLElement {
         }
     }
 
-    /** Atajos de tipo */
     success(msg, ms = 3000) { this.show(msg, ms, 'success'); }
     error(msg, ms = 4000)   { this.show(msg, ms, 'error');   }
     warning(msg, ms = 4000) { this.show(msg, ms, 'warning'); }

@@ -1,10 +1,13 @@
 // Entidad: InscripcionesPrueba
-// Endpoint: /inscripciones  (NO /inscripciones_prueba — verificar DAO)
+// Endpoint principal: POST /aspirantes/{idAspirante}/inscripciones
+//   body: { pruebaAdmision: { idPruebaAdmision: UUID } }  → 201
+// Consulta:           GET /inscripciones_prueba/{idInscripcion}
+//                     GET /inscripciones_prueba?idPrueba=UUID&estado=INSCRITO
 // Campos reales del backend (getters → JSON):
 //   idInscripcionPrueba (UUID), aspiranteDato (nested AspirantesDato),
 //   pruebaAdmision (nested PruebasAdmision), estado (String)
-// NOTA: no existe campo turnoId directo en la entidad.
-//       El turno se resuelve por AsignacionAulaAspirante (otro endpoint).
+// NOTA: no existe campo turnoId en la entidad.
+//       El turno/aula se asigna vía AsignacionAulaAspirante (proceso administrativo).
 export default class InscripcionPrueba {
     constructor(data = {}) {
         // PK: backend usa idInscripcionPrueba, tests usan id

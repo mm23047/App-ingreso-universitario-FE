@@ -1,0 +1,138 @@
+<!-- ============================================================
+     VISTA: EXAMEN EN LÍNEA  (#/examen)
+     Fragmento inyectado por el router en <main id="app-content">.
+     Controller: ExamenController
+     DAOs:       ExamenDao
+       → POST /examen_realizado  { idInscripcion, idEtapa }
+       → GET  /examen_realizado/{id}/preguntas
+       → POST /respuestas_examen/lote  { idExamen, opcionesSeleccionadas: [UUID] }
+       → POST /examen_realizado/{id}/calificar  (solo backend, NO desde el FE)
+     Nota: etapaId debe obtenerse del sistema (etapa activa).
+     ============================================================ -->
+
+<style>
+    .pregunta-bloque {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        margin-bottom: var(--space-md);
+    }
+    .pregunta-numero {
+        font-size: .8rem;
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-xs);
+    }
+    .pregunta-enunciado {
+        font-weight: 600;
+        margin-bottom: var(--space-md);
+    }
+    .opcion-label {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: border-color var(--transition), background var(--transition);
+        margin-bottom: var(--space-xs);
+    }
+    .opcion-label:hover { border-color: var(--color-primary-light); background: #EFF6FF; }
+    input[type="radio"]:checked + .opcion-label {
+        border-color: var(--color-primary);
+        background: #DBEAFE;
+        font-weight: 600;
+    }
+    input[type="radio"] { display: none; }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg);">
+    <h2 style="color: var(--color-primary-dark);">Prueba de Admisión</h2>
+    <div id="info-examen" class="text-muted" style="font-size:.9rem;"></div>
+</div>
+
+<div id="area-preguntas">
+    <p class="text-muted text-center">Iniciando examen...</p>
+</div>
+
+<div class="mt-lg" style="display: flex; justify-content: flex-end; gap: var(--space-md);">
+    <button id="btn-entregar" class="btn btn-primary" disabled>Entregar examen</button>
+</div>
+
+<script type="module">
+    import ExamenController from '../../control/examen_controller.js';
+    import { store } from '../../infra/app_state.js';
+
+    const controller   = new ExamenController();
+    const areaPreguntas = document.getElementById('area-preguntas');
+    const btnEntregar  = document.getElementById('btn-entregar');
+    const infoExamen   = document.getElementById('info-examen');
+
+    const respuestasSeleccionadas = new Map(); // preguntaId → opcionId
+
+    const renderPreguntas = (preguntas) => {
+        if (!preguntas.length) {
+            areaPreguntas.innerHTML = '<p class="text-muted text-center">No hay preguntas disponibles.</p>';
+            return;
+        }
+
+        areaPreguntas.innerHTML = preguntas.map((p, idx) => `
+            <div class="pregunta-bloque">
+                <p class="pregunta-numero">Pregunta ${idx + 1} de ${preguntas.length}</p>
+                <p class="pregunta-enunciado">${p.enunciado ?? p.textoPregunta ?? ''}</p>
+                <div class="opciones" data-pregunta-id="${p.idBancoPregunta}">
+                    ${(p.opciones ?? []).map(o => `
+                        <div>
+                            <input type="radio" name="preg-${p.idBancoPregunta}"
+                                   id="opc-${o.idPreguntaOpcion}"
+                                   value="${o.idPreguntaOpcion}">
+                            <label class="opcion-label" for="opc-${o.idPreguntaOpcion}">
+                                ${o.textoRespuesta}
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        areaPreguntas.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const preguntaId = radio.closest('.opciones').dataset.preguntaId;
+                respuestasSeleccionadas.set(preguntaId, radio.value);
+                btnEntregar.disabled = false;
+            });
+        });
+
+        infoExamen.textContent = `Examen ID: ${store.examenActivo?.id ?? ''}`;
+    };
+
+    const iniciarYCargar = async () => {
+        // TODO: obtener etapaId del sistema (etapa activa de admisión).
+        const etapaId = null; // reemplazar con UUID real de la etapa activa
+
+        try {
+            if (!store.examenActivo) {
+                await controller.iniciar(etapaId);
+            }
+            const preguntas = await controller.cargarPreguntas();
+            renderPreguntas(preguntas);
+        } catch (_) {
+            areaPreguntas.innerHTML = '<p class="text-danger text-center">No se pudo cargar el examen.</p>';
+        }
+    };
+
+    btnEntregar.addEventListener('click', async () => {
+        const opcionesIds = [...respuestasSeleccionadas.values()];
+        btnEntregar.disabled = true;
+        btnEntregar.textContent = 'Entregando...';
+        try {
+            await controller.entregar(opcionesIds);
+        } catch (_) {
+            btnEntregar.disabled = false;
+            btnEntregar.textContent = 'Entregar examen';
+        }
+    });
+
+    iniciarYCargar();
+</script>

@@ -5,16 +5,23 @@ const ASSETS_ESTATICOS = [
     '/src/css/global.css',
     '/src/css/grid-layout.css',
     '/src/css/responsive.css',
-    '/src/js/state/app_state.js',
-    '/src/js/router.js',
-    '/src/js/components/notificacion-toast.js',
-    '/src/js/components/contador.js',
+    '/src/js/infra/app_state.js',
+    '/src/js/infra/router.js',
+    '/src/js/boundary/components/notificacion-toast.js',
+    '/src/js/boundary/components/contador.js',
     '/manifest.json'
 ];
 
 const API_PATTERN = /localhost:9080/;
-const API_PATHS = ['/turnos', '/carreras', '/aspirantes', '/inscripciones_prueba',
-                   '/preguntas', '/examen_realizado', '/respuestas_examen'];
+const API_PATHS = [
+    '/aspirantes',
+    '/carreras',
+    '/turnos',
+    '/inscripciones_prueba',
+    '/preguntas',
+    '/examen_realizado',
+    '/respuestas_examen'
+];
 
 const _esLlamadaAPI = (url) =>
     API_PATTERN.test(url) || API_PATHS.some(p => url.includes(p));

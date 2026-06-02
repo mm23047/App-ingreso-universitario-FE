@@ -1,5 +1,5 @@
-import TurnosDao from '../dao/turnos_dao.js';
-import { store } from '../state/app_state.js';
+import TurnosDao from './turnos_dao.js';
+import { store } from '../infra/app_state.js';
 
 class TurnosController {
     constructor() {
@@ -35,15 +35,10 @@ class TurnosController {
         }
     }
 
-    /**
-     * Selecciona un turno: lo guarda en el store Y en localStorage.
-     */
     seleccionarTurno(id) {
         const turno = this.buscarTurnoEnMemoria(id);
         if (!turno) {
-            document.querySelector('app-toast')?.show(
-                'Turno no encontrado', 3000, 'warning'
-            );
+            document.querySelector('app-toast')?.show('Turno no encontrado', 3000, 'warning');
             return null;
         }
         store.turnoSeleccionado = turno;
@@ -61,7 +56,7 @@ class TurnosController {
     procesarTurno(turno) {
         return {
             ...turno,
-            etiqueta: `${turno.nombre} - ${turno.horario}`,
+            etiqueta: `${turno.nombre} - ${turno.horaInicio ?? turno.horario ?? ''}`,
             esValida: this.validarTurno(turno),
             formateada: this.formatearTurno(turno)
         };

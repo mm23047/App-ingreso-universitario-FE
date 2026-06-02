@@ -1,11 +1,10 @@
 import DefaultDao from './default_dao.js';
+import Aspirante from '../entity/Aspirante.js';
 
 // Endpoint: POST /aspirantes, GET /aspirantes/{id}
-// Entidad backend: AspirantesDato
-// Campos reales del POST: nombres (String), apellidos (String),
-//   fechaNacimiento (String YYYY-MM-DD), dui (String max 12),
-//   correo (String), usaSillaRuedas (Boolean, default false)
-// El backend genera: id (UUID), fechaCreacionPerfil (LocalDate)
+// Campos POST: nombres, apellidos, fechaNacimiento (YYYY-MM-DD), dui (00000000-0),
+//              correo, usaSillaRuedas (Boolean, default false)
+// Respuesta 201: id (UUID), fechaCreacionPerfil (LocalDate) + campos enviados
 class AspirantesDao extends DefaultDao {
     constructor() {
         super();
@@ -23,7 +22,8 @@ class AspirantesDao extends DefaultDao {
                 body: JSON.stringify(aspiranteData)
             });
             if (respuesta.status === 201) {
-                return await respuesta.json();
+                const data = await respuesta.json();
+                return new Aspirante(data);
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
@@ -39,7 +39,8 @@ class AspirantesDao extends DefaultDao {
         try {
             const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'GET' });
             if (respuesta.status === 200) {
-                return await respuesta.json();
+                const data = await respuesta.json();
+                return new Aspirante(data);
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {

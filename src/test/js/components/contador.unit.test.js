@@ -1,5 +1,5 @@
 import { expect } from '../lib/chai/index.js';
-import '../../../js/components/contador.js';
+import '../../../js/boundary/components/contador.js';
 
 describe('ContadorComponent - Pruebas Unitarias', () => {
     let contador;

@@ -83,7 +83,6 @@ class ContadorComponent extends HTMLElement {
         this.velocidad = 1000;
         this.autoIncrementando = true;
         this.attachShadow({ mode: 'open' });
-        /* Clonar el template en el Shadow DOM */
         this.shadowRoot.appendChild(_template.content.cloneNode(true));
     }
 
@@ -125,8 +124,6 @@ class ContadorComponent extends HTMLElement {
         this.shadowRoot.getElementById('reiniciar').addEventListener('click', () => this.reiniciar());
     }
 
-    /* ── Actualizaciones quirúrgicas del DOM (sin re-render total) ── */
-
     _sincronizarDisplay() {
         const numero = this.shadowRoot.querySelector('.numero');
         if (numero) numero.textContent = this.contador;
@@ -145,8 +142,6 @@ class ContadorComponent extends HTMLElement {
             estado.className = `estado ${this.autoIncrementando ? 'activo' : 'pausado'}`;
         }
     }
-
-    /* ── Métodos públicos ── */
 
     aumentar() {
         this.contador++;
