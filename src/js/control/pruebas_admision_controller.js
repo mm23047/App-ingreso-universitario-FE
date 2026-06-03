@@ -45,10 +45,10 @@ class PruebasAdmisionController {
         }
     }
 
-    async cargarTodas(first = 0, max = 50) {
+    async cargarTodas(first = 0, max = 50, buscar = '') {
         store.loading = true;
         try {
-            return await this.pruebasDao.obtenerTodas(first, max);
+            return await this.pruebasDao.obtenerTodas(first, max, buscar);
         } catch (error) {
             console.error('Error al cargar pruebas de admisión:', error);
             document.querySelector('app-toast')?.show(

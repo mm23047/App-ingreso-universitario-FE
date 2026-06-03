@@ -1,10 +1,10 @@
 <!-- ============================================================
      VISTA: PROCESOS DE INGRESO  (#/procesos)
      Fragmento inyectado por el router en <main id="app-content">.
-     Controller: PruebasAdmisionController  →  GET /pruebas_admision?first=0&max=50
+     Controller: PruebasAdmisionController  →  GET /pruebas_admision?first=0&max=50[&buscar=texto]
      Campos BE:  idPruebaAdmision (UUID), nombrePrueba (String), anio (Integer), activa (Boolean)
-     Orden:      cronológico descendente (anio más reciente primero)
-     Filtro:     cliente — por nombrePrueba o anio
+     Orden:      cronológico descendente desde backend (anio DESC, nombrePrueba ASC)
+     Filtro:     backend — ?buscar= filtra por nombre (LIKE) o año (exacto)
      ============================================================ -->
 
 <style>
@@ -63,11 +63,9 @@
     import { store } from './js/infra/app_state.js';
     import { navigate } from './js/infra/router.js';
 
-    const ctrl    = new PruebasAdmisionController();
-    const lista   = document.getElementById('lista-procesos');
+    const ctrl     = new PruebasAdmisionController();
+    const lista    = document.getElementById('lista-procesos');
     const buscador = document.getElementById('buscador');
-
-    let todasLasPruebas = [];
 
     const renderPrueba = (p) => {
         const badge = p.activa
@@ -127,23 +125,20 @@
             : `<p class="text-danger text-center">Error al cargar procesos: ${err.message}</p>`;
     };
 
-    // ── Cargar y ordenar ──
-    ctrl.cargarTodas()
-        .then(pruebas => {
-            // Orden cronológico descendente (más reciente primero)
-            todasLasPruebas = [...pruebas].sort((a, b) => (b.anio ?? 0) - (a.anio ?? 0));
-            renderLista(todasLasPruebas);
-        })
-        .catch(renderError);
+    const cargar = (buscar = '') => {
+        lista.innerHTML = '<p class="text-muted text-center">Cargando procesos de admisión...</p>';
+        ctrl.cargarTodas(0, 50, buscar)
+            .then(renderLista)
+            .catch(renderError);
+    };
 
-    // ── Filtro por texto en tiempo real ──
+    // ── Carga inicial — el backend ya devuelve el orden correcto ──
+    cargar();
+
+    // ── Filtro por texto — debounce 300ms, delega al backend ──
+    let _debounce;
     buscador.addEventListener('input', () => {
-        const q = buscador.value.toLowerCase().trim();
-        if (!q) { renderLista(todasLasPruebas); return; }
-        const filtradas = todasLasPruebas.filter(p =>
-            p.nombrePrueba.toLowerCase().includes(q) ||
-            String(p.anio).includes(q)
-        );
-        renderLista(filtradas);
+        clearTimeout(_debounce);
+        _debounce = setTimeout(() => cargar(buscador.value.trim()), 300);
     });
 </script>

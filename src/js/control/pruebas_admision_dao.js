@@ -45,9 +45,11 @@ class PruebasAdmisionDao extends DefaultDao {
         }
     }
 
-    async obtenerTodas(first = 0, max = 50) {
+    async obtenerTodas(first = 0, max = 50, buscar = '') {
         try {
-            const respuesta = await fetch(`${this.BASE_URL}?first=${first}&max=${max}`, { method: 'GET' });
+            const params = new URLSearchParams({ first, max });
+            if (buscar.trim()) params.append('buscar', buscar.trim());
+            const respuesta = await fetch(`${this.BASE_URL}?${params}`, { method: 'GET' });
             if (respuesta.status === 200) {
                 return (await respuesta.json()).map(d => this._mapear(d));
             }
