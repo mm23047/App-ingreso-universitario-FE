@@ -45,8 +45,8 @@ class PruebasAdmisionController {
         }
     }
 
-    async cargarTodas(first = 0, max = 50, buscar = '') {
-        store.loading = true;
+    async cargarTodas(first = 0, max = 50, buscar = '', silencioso = false) {
+        if (!silencioso) store.loading = true;
         try {
             return await this.pruebasDao.obtenerTodas(first, max, buscar);
         } catch (error) {
@@ -56,7 +56,7 @@ class PruebasAdmisionController {
             );
             throw error;
         } finally {
-            store.loading = false;
+            if (!silencioso) store.loading = false;
         }
     }
 }

@@ -125,15 +125,30 @@
             : `<p class="text-danger text-center">Error al cargar procesos: ${err.message}</p>`;
     };
 
-    const cargar = (buscar = '') => {
-        lista.innerHTML = '<p class="text-muted text-center">Cargando procesos de admisión...</p>';
-        ctrl.cargarTodas(0, 50, buscar)
-            .then(renderLista)
-            .catch(renderError);
+    // Contador de petición: descarta respuestas obsoletas (evita race condition)
+    let _peticionActual = 0;
+    const cargar = (buscar = '', esInicial = false) => {
+        const peticion = ++_peticionActual;
+        if (esInicial) {
+            lista.innerHTML = '<p class="text-muted text-center">Cargando procesos de admisión...</p>';
+        } else {
+            lista.style.opacity = '0.5';
+        }
+        ctrl.cargarTodas(0, 50, buscar, !esInicial)
+            .then(pruebas => {
+                if (peticion !== _peticionActual) return;
+                lista.style.opacity = '';
+                renderLista(pruebas);
+            })
+            .catch(err => {
+                if (peticion !== _peticionActual) return;
+                lista.style.opacity = '';
+                renderError(err);
+            });
     };
 
     // ── Carga inicial — el backend ya devuelve el orden correcto ──
-    cargar();
+    cargar('', true);
 
     // ── Filtro por texto — debounce 300ms, delega al backend ──
     let _debounce;
