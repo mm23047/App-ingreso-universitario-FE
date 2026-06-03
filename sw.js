@@ -19,8 +19,11 @@ const API_PATHS = [
     '/turnos',
     '/inscripciones_prueba',
     '/preguntas',
+    '/opciones',
     '/examen_realizado',
-    '/respuestas_examen'
+    '/respuestas_examen',
+    '/pruebas_admision',
+    '/etapas'
 ];
 
 const _esLlamadaAPI = (url) =>

@@ -1,19 +1,19 @@
-import ExamenDao from './examen_dao.js';
+import ExamenRealizadoDao from './examen_realizado_dao.js';
+import RespuestaExamenDao from './respuesta_examen_dao.js';
+import PreguntasDao from './preguntas_dao.js';
 import { store } from '../infra/app_state.js';
 import { navigate } from '../infra/router.js';
 
 class ExamenController {
     constructor() {
-        this.examenDao = new ExamenDao();
+        this.examenRealizadoDao = new ExamenRealizadoDao();
+        this.respuestaExamenDao = new RespuestaExamenDao();
+        this.preguntasDao       = new PreguntasDao();
     }
 
-    /**
-     * Inicia el examen para la inscripción activa en la etapa dada.
-     * El backend asigna automáticamente la clave de examen.
-     * @param {string} etapaId UUID de la EtapaAdmision activa
-     */
-    async iniciar(etapaId) {
-        const inscripcionId = store.inscripcionActiva?.id;
+    async iniciar() {
+        const inscripcionId = store.inscripcionActiva?.idInscripcionPrueba;
+        const etapaId       = store.etapa?.idEtapaAdmision;
 
         if (!inscripcionId) {
             const msg = 'Debe completar la inscripción antes de iniciar el examen';
@@ -21,14 +21,14 @@ class ExamenController {
             throw new Error(msg);
         }
         if (!etapaId) {
-            const msg = 'No se ha especificado la etapa de admisión';
+            const msg = 'No se ha determinado la etapa de admisión activa';
             document.querySelector('app-toast')?.show(msg, 4000, 'warning');
             throw new Error(msg);
         }
 
         store.loading = true;
         try {
-            const examen = await this.examenDao.iniciarExamen(inscripcionId, etapaId);
+            const examen = await this.examenRealizadoDao.iniciarExamen(inscripcionId, etapaId);
             store.examenActivo = examen;
             return examen;
         } catch (error) {
@@ -42,12 +42,8 @@ class ExamenController {
         }
     }
 
-    /**
-     * Carga las preguntas del examen activo usando la clave asignada por el backend.
-     * Requiere que store.examenActivo esté definido.
-     */
     async cargarPreguntas() {
-        const examenId = store.examenActivo?.id;
+        const examenId = store.examenActivo?.idExamenRealizado;
         if (!examenId) {
             const msg = 'No hay examen activo para cargar preguntas';
             document.querySelector('app-toast')?.show(msg, 4000, 'warning');
@@ -56,7 +52,23 @@ class ExamenController {
 
         store.loading = true;
         try {
-            const preguntas = await this.examenDao.obtenerPreguntasDelExamen(examenId);
+            const preguntas = await this.examenRealizadoDao.obtenerPreguntas(examenId);
+
+            await Promise.all(
+                preguntas.map(async (pxc) => {
+                    const idPregunta = pxc.bancoPregunta?.idBancoPregunta;
+                    if (idPregunta) {
+                        try {
+                            pxc.opciones = await this.preguntasDao.obtenerOpcionesDePregunta(idPregunta);
+                        } catch {
+                            pxc.opciones = [];
+                        }
+                    } else {
+                        pxc.opciones = [];
+                    }
+                })
+            );
+
             store.preguntas = preguntas;
             return preguntas;
         } catch (error) {
@@ -70,29 +82,19 @@ class ExamenController {
         }
     }
 
-    /**
-     * Guarda una respuesta individual (autoguardado por pregunta).
-     * @param {string} opcionId UUID de la PreguntaOpcion seleccionada
-     */
     async guardarRespuesta(opcionId) {
-        const examenId = store.examenActivo?.id;
-        if (!examenId) {
-            throw new Error('No hay examen activo');
-        }
+        const examenId = store.examenActivo?.idExamenRealizado;
+        if (!examenId) throw new Error('No hay examen activo');
         try {
-            return await this.examenDao.enviarRespuesta(examenId, opcionId);
+            return await this.respuestaExamenDao.enviarRespuesta(examenId, opcionId);
         } catch (error) {
             console.error('Error al guardar respuesta:', error);
             throw error;
         }
     }
 
-    /**
-     * Envía todas las respuestas seleccionadas y navega a resultados.
-     * @param {string[]} opcionesIds Lista de UUIDs de PreguntaOpcion seleccionadas
-     */
     async entregar(opcionesIds) {
-        const examenId = store.examenActivo?.id;
+        const examenId = store.examenActivo?.idExamenRealizado;
 
         if (!examenId) {
             const msg = 'No hay examen activo';
@@ -107,7 +109,7 @@ class ExamenController {
 
         store.loading = true;
         try {
-            await this.examenDao.enviarRespuestasLote(examenId, opcionesIds);
+            await this.respuestaExamenDao.enviarLote(examenId, opcionesIds);
             store.examenActivo = { ...store.examenActivo, completado: true };
             document.querySelector('app-toast')?.show(
                 'Examen entregado. El puntaje será calculado por el sistema.', 5000, 'success'
@@ -124,14 +126,11 @@ class ExamenController {
         }
     }
 
-    /**
-     * Recupera respuestas guardadas (útil si el aspirante recarga la página).
-     */
     async recuperarRespuestas() {
-        const examenId = store.examenActivo?.id;
+        const examenId = store.examenActivo?.idExamenRealizado;
         if (!examenId) return [];
         try {
-            return await this.examenDao.obtenerRespuestasGuardadas(examenId);
+            return await this.respuestaExamenDao.obtenerPorExamen(examenId);
         } catch (error) {
             console.error('Error al recuperar respuestas:', error);
             return [];

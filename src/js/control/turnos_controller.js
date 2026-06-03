@@ -1,4 +1,5 @@
 import TurnosDao from './turnos_dao.js';
+import LocalStorageDao from './local_storage_dao.js';
 import { store } from '../infra/app_state.js';
 
 class TurnosController {
@@ -11,9 +12,9 @@ class TurnosController {
         store.loading = true;
         try {
             const turnos = await this.turnosDao.obtenerTurnos();
-            this.turnosEnMemoria = this.procesarTurnos(turnos);
-            store.turnos = this.turnosEnMemoria;
-            return this.turnosEnMemoria;
+            this.turnosEnMemoria = turnos;
+            store.turnos = turnos;
+            return turnos;
         } catch (error) {
             console.error('Error al cargar turnos:', error);
             document.querySelector('app-toast')?.show(
@@ -27,56 +28,30 @@ class TurnosController {
 
     async obtenerTurnoPorId(id) {
         try {
-            const turno = await this.turnosDao.obtenerTurnoPorId(id);
-            return this.procesarTurno(turno);
+            return await this.turnosDao.obtenerTurnoPorId(id);
         } catch (error) {
             console.error('Error al obtener turno:', error);
             throw error;
         }
     }
 
-    seleccionarTurno(id) {
-        const turno = this.buscarTurnoEnMemoria(id);
+    seleccionarTurno(idTurnoExamen) {
+        const turno = this.buscarTurnoEnMemoria(idTurnoExamen);
         if (!turno) {
             document.querySelector('app-toast')?.show('Turno no encontrado', 3000, 'warning');
             return null;
         }
         store.turnoSeleccionado = turno;
-        this.guardarSeleccionTurno(id);
+        this.guardarSeleccionTurno(idTurnoExamen);
         document.querySelector('app-toast')?.show(
-            `Turno seleccionado: ${turno.nombre ?? turno.id}`, 2500, 'success'
+            `Turno seleccionado: ${turno.nombreTurno}`, 2500, 'success'
         );
         return turno;
     }
 
-    procesarTurnos(turnos) {
-        return turnos.map(turno => this.procesarTurno(turno));
-    }
-
-    procesarTurno(turno) {
-        return {
-            ...turno,
-            etiqueta: `${turno.nombre} - ${turno.horaInicio ?? turno.horario ?? ''}`,
-            esValida: this.validarTurno(turno),
-            formateada: this.formatearTurno(turno)
-        };
-    }
-
-    validarTurno(turno) {
-        return turno && turno.id && turno.nombre;
-    }
-
-    formatearTurno(turno) {
-        return {
-            codigo: turno.id,
-            titulo: turno.nombre.toUpperCase(),
-            descripcion: `Turno: ${turno.nombre}`
-        };
-    }
-
     guardarSeleccionTurno(turnoId) {
         try {
-            localStorage.setItem('turnoSeleccionado', turnoId);
+            LocalStorageDao.establecerTurnoActual(turnoId);
             return true;
         } catch (error) {
             console.error('Error al guardar turno:', error);
@@ -85,12 +60,11 @@ class TurnosController {
     }
 
     obtenerTurnoGuardado() {
-        const turnoId = localStorage.getItem('turnoSeleccionado');
-        return turnoId ? parseInt(turnoId) : null;
+        return LocalStorageDao.obtenerTurnoActual();
     }
 
     limpiarSeleccion() {
-        localStorage.removeItem('turnoSeleccionado');
+        LocalStorageDao.limpiarTodo();
         store.turnoSeleccionado = null;
     }
 
@@ -98,8 +72,8 @@ class TurnosController {
         return this.turnosEnMemoria;
     }
 
-    buscarTurnoEnMemoria(id) {
-        return this.turnosEnMemoria.find(t => t.id === id);
+    buscarTurnoEnMemoria(idTurnoExamen) {
+        return this.turnosEnMemoria.find(t => t.idTurnoExamen === idTurnoExamen);
     }
 }
 

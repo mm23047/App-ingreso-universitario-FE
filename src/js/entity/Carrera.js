@@ -1,7 +1,10 @@
-// Entidad: CatalogoCarrera
-// Campos backend: idCarrera (String, max 10), nombreCatalogoCarrera (String, max 100)
-export default class Carrera {
-    constructor(data = {}) {
-        Object.assign(this, data);
+// BE: CatalogoCarrera  @Table(name="catalogo_carrera")
+// PK: String idCarrera  (max 10)
+class Carrera {
+    constructor(idCarrera, nombreCatalogoCarrera) {
+        this.idCarrera             = idCarrera;
+        this.nombreCatalogoCarrera = nombreCatalogoCarrera;
     }
 }
+
+export default Carrera;

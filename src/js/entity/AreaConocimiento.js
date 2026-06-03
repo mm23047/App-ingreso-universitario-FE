@@ -1,13 +1,10 @@
-// Entidad: AreasConocimiento
-// Endpoint: GET /areas
-// Campos reales del backend (getters → JSON):
-//   idAreaConocimiento (UUID), nombreArea (String)
-export default class AreaConocimiento {
-    constructor(data = {}) {
-        this.idAreaConocimiento = data.idAreaConocimiento ?? data.id ?? null;
-        this.id                 = data.idAreaConocimiento ?? data.id ?? null;
-
-        this.nombreArea = data.nombreArea ?? data.nombre ?? '';
-        this.nombre     = data.nombreArea ?? data.nombre ?? '';
+// BE: AreasConocimiento  @Table(name="area_conocimiento")
+// PK: UUID idAreaConocimiento  (columna id_area)
+class AreaConocimiento {
+    constructor(idAreaConocimiento, nombreArea) {
+        this.idAreaConocimiento = idAreaConocimiento;
+        this.nombreArea         = nombreArea;
     }
 }
+
+export default AreaConocimiento;

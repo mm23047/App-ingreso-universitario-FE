@@ -23,8 +23,8 @@ class CarrerasController {
         }
     }
 
-    seleccionarCarrera(id) {
-        const carrera = store.carreras.find(c => c.idCarrera === id);
+    seleccionarCarrera(idCarrera) {
+        const carrera = store.carreras.find(c => c.idCarrera === idCarrera);
         if (!carrera) {
             document.querySelector('app-toast')?.show('Carrera no encontrada', 3000, 'warning');
             return null;

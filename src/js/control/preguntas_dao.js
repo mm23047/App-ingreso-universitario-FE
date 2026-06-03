@@ -1,24 +1,45 @@
 import DefaultDao from './default_dao.js';
 import Pregunta from '../entity/Pregunta.js';
 import Opcion from '../entity/Opcion.js';
+import BancoRespuesta from '../entity/BancoRespuesta.js';
 
-// Endpoint: GET /preguntas  (listado general, sin filtro por prueba en el backend actual)
-//           GET /preguntas/{id}/opciones
-// Para obtener las preguntas de un examen específico usar:
-//   ExamenDao.obtenerPreguntasDelExamen(examenId)
-//   → GET /examen_realizado/{id}/preguntas (devuelve PreguntasPorClave de la clave asignada)
+// Resource: BancoPreguntaResource  @Path("preguntas")
+// GET /preguntas?first=0&max=50
+// GET /preguntas/{id}/opciones   → PreguntaOpcion[]  (con idRespuestaGlobal JOIN FETCH)
 class PreguntasDao extends DefaultDao {
     constructor() {
         super();
         this.BASE_URL += 'preguntas';
     }
 
+    _mapear(data) {
+        return new Pregunta(
+            data.idBancoPregunta ?? null,
+            data.enunciado       ?? '',
+            data.tema            ?? null
+        );
+    }
+
+    _mapearOpcion(data) {
+        return new Opcion(
+            data.idPreguntaOpcion ?? null,
+            data.bancoPregunta    ?? null,
+            data.idRespuestaGlobal
+                ? new BancoRespuesta(
+                    data.idRespuestaGlobal.idBancoRespuesta ?? null,
+                    data.idRespuestaGlobal.textoRespuesta   ?? '',
+                    data.idRespuestaGlobal.areaConocimiento ?? null
+                )
+                : null,
+            data.esCorrecta ?? false
+        );
+    }
+
     async obtenerTodas(first = 0, max = 50) {
         try {
             const respuesta = await fetch(`${this.BASE_URL}?first=${first}&max=${max}`, { method: 'GET' });
             if (respuesta.status === 200) {
-                const data = await respuesta.json();
-                return data.map(item => new Pregunta(item));
+                return (await respuesta.json()).map(d => this._mapear(d));
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
@@ -28,14 +49,11 @@ class PreguntasDao extends DefaultDao {
     }
 
     async obtenerOpcionesDePregunta(idPregunta) {
-        if (!idPregunta) {
-            throw new Error('El ID de la pregunta es requerido');
-        }
+        if (!idPregunta) throw new Error('El ID de la pregunta es requerido');
         try {
             const respuesta = await fetch(`${this.BASE_URL}/${idPregunta}/opciones`, { method: 'GET' });
             if (respuesta.status === 200) {
-                const data = await respuesta.json();
-                return data.map(item => new Opcion(item));
+                return (await respuesta.json()).map(d => this._mapearOpcion(d));
             }
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {

@@ -1,36 +1,21 @@
-// Entidad: ExamenRealizado
-// Endpoint: POST /examen_realizado  body: { idInscripcion: UUID, idEtapa: UUID }  → 201
-//           GET  /examen_realizado/{id}
-//           GET  /examen_realizado/{id}/preguntas  → preguntas de la clave asignada
-//           POST /examen_realizado/{id}/calificar  → solo proceso administrativo del backend
-// Campos reales de la respuesta JSON (getters → JSON):
-//   idExamenRealizado (UUID), inscripcionesPrueba (nested), claveExamen (nested),
-//   etapaAdmision (nested), puntajeFinal (BigDecimal, null hasta calificación),
-//   fechaRealizacion (OffsetDateTime ISO-8601)
-export default class ExamenRealizado {
-    constructor(data = {}) {
-        // PK: backend usa idExamenRealizado, tests usan id
-        this.idExamenRealizado = data.idExamenRealizado ?? data.id ?? null;
-        this.id                = data.idExamenRealizado ?? data.id ?? null;
-
-        // Relaciones anidadas
-        this.inscripcionesPrueba = data.inscripcionesPrueba ?? null;
-        this.claveExamen         = data.claveExamen         ?? null;
-        this.etapaAdmision       = data.etapaAdmision       ?? null;
-
-        // Campos escalares
-        this.puntajeFinal    = data.puntajeFinal    ?? null;
-        this.fechaRealizacion = data.fechaRealizacion ?? null;
-
-        // Campos planos derivados (compatibilidad con controladores y tests)
-        this.aspiranteId = data.aspiranteId
-            ?? data.inscripcionesPrueba?.aspiranteDato?.id
-            ?? null;
-        this.pruebaId = data.pruebaId
-            ?? data.inscripcionesPrueba?.pruebaAdmision?.idPruebaAdmision
-            ?? null;
-
-        // guardado: campo usado en mocks de test, no viene del backend real
-        this.guardado = data.guardado ?? false;
+// BE: ExamenRealizado  @Table(name="examen_realizado")
+// PK: UUID idExamenRealizado  (columna id_examen)
+// Unique constraint: (id_inscripcion, id_etapa)
+// Relaciones:
+//   inscripcionesPrueba @ManyToOne InscripcionesPrueba (NOT NULL, LAZY → JOIN FETCH)
+//   claveExamen         @ManyToOne ClavesExamen        (NOT NULL, LAZY → JOIN FETCH)
+//   etapaAdmision       @ManyToOne EtapasAdmision      (NOT NULL, LAZY → JOIN FETCH)
+// puntajeFinal: null hasta que se llame POST /examen_realizado/{id}/calificar
+// fechaRealizacion: OffsetDateTime, set automáticamente por @PrePersist
+class ExamenRealizado {
+    constructor(idExamenRealizado, inscripcionesPrueba, claveExamen, etapaAdmision, puntajeFinal, fechaRealizacion) {
+        this.idExamenRealizado   = idExamenRealizado;
+        this.inscripcionesPrueba = inscripcionesPrueba;
+        this.claveExamen         = claveExamen;
+        this.etapaAdmision       = etapaAdmision;
+        this.puntajeFinal        = puntajeFinal;
+        this.fechaRealizacion    = fechaRealizacion;
     }
 }
+
+export default ExamenRealizado;

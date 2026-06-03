@@ -1,19 +1,26 @@
 const _initialState = {
-    aspirante: null,
-    carreraSeleccionada: null,
-    turnoSeleccionado: null,
-    inscripcionActiva: null,
-    examenActivo: null,
+    // Entidades del flujo del aspirante
+    aspirante:          null,   // Aspirante — se llena al registrarse
+    prueba:             null,   // PruebaAdmision activa — cargada al inicio del flujo
+    etapa:              null,   // EtapasAdmision — necesaria para POST /examen_realizado
+    inscripcionActiva:  null,   // InscripcionPrueba — resultado de POST /aspirantes/{id}/inscripciones
+    carreraSeleccionada: null,  // Carrera — seleccionada en la vista de carreras (antes de inscribir)
+    carrerasElegidas:   [],     // CarrerasElegida[] — registradas en la inscripción activa
+    turnoSeleccionado:  null,   // Turno — seleccionado por el aspirante
+    examenActivo:       null,   // ExamenRealizado — iniciado por POST /examen_realizado
+
+    // Datos de catálogo
+    carreras:  [],  // CatalogoCarrera[] — cargados en la vista de carreras
+    turnos:    [],  // TurnosExamen[]    — cargados en la vista de turnos
+    preguntas: [],  // PreguntasPorClave[] — cargados del examen activo
+
+    // UI
     notificaciones: [],
-    loading: false,
-    carreras: [],
-    turnos: [],
-    preguntas: [],
-    route: '/'
+    loading:        false,
+    route:          '/'
 };
 
 const _listeners = {};
-
 const _state = { ..._initialState };
 
 export const store = new Proxy(_state, {
