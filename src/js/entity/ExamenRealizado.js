@@ -15,6 +15,8 @@ class ExamenRealizado {
         this.etapaAdmision       = etapaAdmision;
         this.puntajeFinal        = puntajeFinal;
         this.fechaRealizacion    = fechaRealizacion;
+        this.estadoAdmision      = null;  // PENDIENTE / ADMITIDO / NO_ADMITIDO (desde ProcesoAdmisionAspirante)
+        this.carreraAsignada     = null;  // nombre de la carrera asignada (desde ProcesoAdmisionAspirante)
     }
 }
 

@@ -16,7 +16,7 @@ class ExamenRealizadoDao extends DefaultDao {
     }
 
     _mapear(data) {
-        return new ExamenRealizado(
+        const obj = new ExamenRealizado(
             data.idExamenRealizado   ?? null,
             data.inscripcionesPrueba ?? null,
             data.claveExamen         ?? null,
@@ -24,6 +24,9 @@ class ExamenRealizadoDao extends DefaultDao {
             data.puntajeFinal        ?? null,
             data.fechaRealizacion    ?? null
         );
+        obj.estadoAdmision  = data.estadoAdmision  ?? null;
+        obj.carreraAsignada = data.carreraAsignada ?? null;
+        return obj;
     }
 
     _mapearPreguntaPorClave(data) {

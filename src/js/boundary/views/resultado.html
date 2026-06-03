@@ -27,10 +27,17 @@
         margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-sm);
     }
     .examen-header h3 { margin: 0; color: var(--color-primary-dark); }
-    .badge-calificado { background:#D1FAE5; color:#065F46; font-size:.75rem;
-                        font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badge-pendiente  { background:#FEF3C7; color:#92400E; font-size:.75rem;
-                        font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-calificado   { background:#D1FAE5; color:#065F46; font-size:.75rem;
+                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-pendiente    { background:#FEF3C7; color:#92400E; font-size:.75rem;
+                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-admitido     { background:#DBEAFE; color:#1E40AF; font-size:.75rem;
+                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-no-admitido  { background:#FEE2E2; color:#991B1B; font-size:.75rem;
+                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-pend-adm     { background:#F3F4F6; color:var(--color-text-muted); font-size:.75rem;
+                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badges-row         { display:flex; gap:var(--space-xs); flex-wrap:wrap; }
     .examen-grid { display:grid; grid-template-columns:140px 1fr;
                    gap:var(--space-xs) var(--space-lg); font-size:.93rem; }
     .examen-grid dt { color:var(--color-text-muted); }
@@ -98,9 +105,19 @@
 
     const renderExamen = (ex) => {
         const calificado = ex.puntajeFinal != null;
-        const badge = calificado
+
+        const badgeCalificacion = calificado
             ? '<span class="badge-calificado">Calificado</span>'
             : '<span class="badge-pendiente">Pendiente de calificación</span>';
+
+        let badgeAdmision = '';
+        if (ex.estadoAdmision === 'ADMITIDO') {
+            badgeAdmision = '<span class="badge-admitido">Admitido</span>';
+        } else if (ex.estadoAdmision === 'NO_ADMITIDO') {
+            badgeAdmision = '<span class="badge-no-admitido">No admitido</span>';
+        } else if (ex.estadoAdmision === 'PENDIENTE') {
+            badgeAdmision = '<span class="badge-pend-adm">Pendiente de admisión</span>';
+        }
 
         const fecha = ex.fechaRealizacion
             ? new Date(ex.fechaRealizacion).toLocaleString('es-SV', {
@@ -118,11 +135,16 @@
             ? `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim()
             : '—';
 
+        const estadoInscripcion = ex.inscripcionesPrueba?.estado ?? '—';
+
         return `
             <div class="examen-card">
                 <div class="examen-header">
                     <h3>${pruebaNombre}</h3>
-                    ${badge}
+                    <div class="badges-row">
+                        ${badgeCalificacion}
+                        ${badgeAdmision}
+                    </div>
                 </div>
                 ${calificado ? `
                     <div style="text-align:center; margin:var(--space-md) 0;">
@@ -136,6 +158,9 @@
                     <dd>${fecha}</dd>
                     <dt>Etapa</dt>
                     <dd>${ex.etapaAdmision?.nombre ?? '—'}</dd>
+                    <dt>Estado</dt>
+                    <dd>${estadoInscripcion}</dd>
+                    ${ex.carreraAsignada ? `<dt>Carrera asignada</dt><dd>${ex.carreraAsignada}</dd>` : ''}
                     <dt>ID del examen</dt>
                     <dd style="font-size:.8rem; color:var(--color-text-muted);">${ex.idExamenRealizado}</dd>
                 </dl>
@@ -163,15 +188,8 @@
                 return;
             }
 
-            // Ordenar: calificados primero, luego pendientes; dentro de cada grupo, más reciente primero
-            const ordenados = [...examenes].sort((a, b) => {
-                if ((b.puntajeFinal != null) !== (a.puntajeFinal != null)) {
-                    return (b.puntajeFinal != null) ? 1 : -1;
-                }
-                return new Date(b.fechaRealizacion ?? 0) - new Date(a.fechaRealizacion ?? 0);
-            });
-
-            listaEl.innerHTML = ordenados.map(renderExamen).join('');
+            // El backend devuelve los exámenes ordenados por fechaRealizacion DESC
+            listaEl.innerHTML = examenes.map(renderExamen).join('');
         } catch (error) {
             const esCaida = error instanceof TypeError && error.message.includes('fetch');
             mostrarMensaje(esCaida
