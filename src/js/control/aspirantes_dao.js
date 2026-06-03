@@ -35,7 +35,8 @@ class AspirantesDao extends DefaultDao {
                 body: JSON.stringify(aspiranteData)
             });
             if (respuesta.status === 201) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const errorBody = await respuesta.text().catch(() => '');
+            throw new Error(`Error HTTP: ${respuesta.status}${errorBody ? ' - ' + errorBody : ''}`);
         } catch (error) {
             console.error('Error al crear aspirante:', error);
             throw error;

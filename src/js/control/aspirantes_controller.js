@@ -1,7 +1,7 @@
 import AspirantesDao from './aspirantes_dao.js';
 import { store } from '../infra/app_state.js';
 
-const CAMPOS_REQUERIDOS = ['nombres', 'apellidos', 'dui', 'correo'];
+const CAMPOS_REQUERIDOS = ['nombres', 'apellidos', 'dui', 'fechaNacimiento', 'correo'];
 
 class AspirantesController {
     constructor() {
@@ -41,9 +41,15 @@ class AspirantesController {
             return aspirante;
         } catch (error) {
             console.error('Error al registrar aspirante:', error);
-            const msg = error.message.includes('409')
-                ? 'Ya existe un registro con ese DUI o correo'
-                : `Error al registrar: ${error.message}`;
+            let msg;
+            if (error.message.includes('409')) {
+                const partes = error.message.split(' - ');
+                msg = partes.length > 1
+                    ? partes.slice(1).join(' - ').trim()
+                    : 'Ya existe un registro con ese DUI o correo';
+            } else {
+                msg = `Error al registrar: ${error.message}`;
+            }
             document.querySelector('app-toast')?.show(msg, 5000, 'error');
             throw error;
         } finally {
