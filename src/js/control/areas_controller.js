@@ -31,6 +31,22 @@ class AreasController {
             throw error;
         }
     }
+
+    async cargarPorPrueba(idPrueba) {
+        if (!idPrueba) throw new Error('El ID de la prueba es requerido');
+        store.loading = true;
+        try {
+            return await this.areasDao.obtenerAreasPorPrueba(idPrueba);
+        } catch (error) {
+            console.error('Error al cargar áreas por prueba:', error);
+            document.querySelector('app-toast')?.show(
+                `Error al cargar áreas: ${error.message}`, 4000, 'error'
+            );
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
 }
 
 export default AreasController;

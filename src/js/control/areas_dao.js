@@ -11,7 +11,8 @@ import Tema from '../entity/Tema.js';
 class AreasConocimientoDao extends DefaultDao {
     constructor() {
         super();
-        this.BASE_URL += 'areas';
+        this._raiz    = this.BASE_URL;          // .../v1/
+        this.BASE_URL += 'areas';               // .../v1/areas
     }
 
     _mapear(data) {
@@ -57,6 +58,24 @@ class AreasConocimientoDao extends DefaultDao {
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
             console.error('Error al obtener temas del área:', error);
+            throw error;
+        }
+    }
+
+    // GET /pruebas_admision/{idPrueba}/areas
+    // Retorna [{idAreaConocimiento, nombreArea, temas:[{idTema, nombreTema}]}]
+    // filtrado y ordenado por el backend — no requiere llamadas adicionales.
+    async obtenerAreasPorPrueba(idPrueba) {
+        if (!idPrueba) throw new Error('El ID de la prueba es requerido');
+        try {
+            const url = `${this._raiz}pruebas_admision/${idPrueba}/areas`;
+            const respuesta = await fetch(url, { method: 'GET' });
+            if (respuesta.status === 200) {
+                return await respuesta.json();
+            }
+            throw new Error(`Error HTTP: ${respuesta.status}`);
+        } catch (error) {
+            console.error('Error al obtener áreas por prueba:', error);
             throw error;
         }
     }

@@ -2,15 +2,12 @@
      VISTA: ÁREAS DE CONOCIMIENTO  (#/areas)
      Fragmento inyectado por el router en <main id="app-content">.
 
-     Jerarquía real disponible en la API:
-       GET /areas?max=100         → AreasConocimiento[]  {idAreaConocimiento, nombreArea}
-       GET /areas/{id}/temas      → Tema[]               {idTema, nombreTema, areaConocimiento}
+     Endpoint consumido:
+       GET /pruebas_admision/{idPrueba}/areas
+       → [{idAreaConocimiento, nombreArea, temas:[{idTema, nombreTema}]}]
 
-     NOTA: idTemaPadre es @JsonbTransient en el backend → no llega en JSON.
-           La única jerarquía disponible es: Area → Temas (plana por área).
-
-     Si store.prueba tiene valor (viene de procesos.html), se muestra el contexto
-     del proceso seleccionado. Las áreas son un catálogo global del sistema.
+     Requiere: store.prueba.idPruebaAdmision (establecido en procesos.html).
+     El backend filtra, ordena y agrupa — el frontend solo renderiza.
      ============================================================ -->
 
 <style>
@@ -68,7 +65,7 @@
 
 <h2 class="mb-md" style="color:var(--color-primary-dark);">Áreas de conocimiento</h2>
 <p class="text-muted mb-lg">
-    Catálogo de áreas temáticas del sistema. Cada área contiene los temas evaluados en la prueba de admisión.
+    Áreas y temas evaluados en el proceso seleccionado.
     Haz clic en un área para expandir sus temas.
 </p>
 
@@ -83,103 +80,88 @@
 <script type="module">
     // Rutas relativas al documento base index.html
     import AreasController from './js/control/areas_controller.js';
-    import { store } from './js/infra/app_state.js';
+    import { store }       from './js/infra/app_state.js';
+    import { navigate }    from './js/infra/router.js';
 
-    const ctrl      = new AreasController();
-    const listaEl   = document.getElementById('lista-areas');
-    const ctxEl     = document.getElementById('contexto-proceso');
+    const ctrl    = new AreasController();
+    const listaEl = document.getElementById('lista-areas');
+    const ctxEl   = document.getElementById('contexto-proceso');
 
-    // ── Mostrar contexto de proceso si viene de procesos.html ──
     const prueba = store.prueba;
-    if (prueba?.idPruebaAdmision) {
+
+    // ── Sin proceso seleccionado: dirigir al usuario a procesos ──
+    if (!prueba?.idPruebaAdmision) {
+        listaEl.innerHTML = `
+            <p class="text-muted text-center">No hay un proceso seleccionado.</p>
+            <div class="text-center mt-md">
+                <button class="btn btn-primary" id="btn-ir-procesos">Ver procesos →</button>
+            </div>`;
+        document.getElementById('btn-ir-procesos')
+            ?.addEventListener('click', () => navigate('/procesos'));
+    } else {
+        // ── Mostrar contexto del proceso ──
         ctxEl.innerHTML =
-            `Mostrando áreas del sistema correspondientes al proceso: ` +
+            `Áreas y temas del proceso: ` +
             `<strong>${prueba.nombrePrueba} (${prueba.anio ?? '—'})</strong>`;
         ctxEl.classList.remove('hidden');
-    }
 
-    // ── Crear nodo de área con carga lazy de temas ──
-    const crearNodoArea = (area) => {
-        const nodo = document.createElement('div');
-        nodo.className = 'area-nodo';
-        nodo.dataset.id = area.idAreaConocimiento;
+        // ── Crear nodo colapsable — temas ya incluidos en la respuesta ──
+        const crearNodoArea = (area) => {
+            const nodo = document.createElement('div');
+            nodo.className = 'area-nodo';
+            nodo.dataset.id = area.idAreaConocimiento;
 
-        nodo.innerHTML = `
-            <div class="area-cabecera" role="button" tabindex="0"
-                 aria-expanded="false" aria-controls="temas-${area.idAreaConocimiento}">
-                <span class="area-titulo">${area.nombreArea}</span>
-                <span class="area-icono-toggle" aria-hidden="true">▶</span>
-            </div>
-            <div class="area-temas" id="temas-${area.idAreaConocimiento}"
-                 role="region">
-                <p class="cargando-temas">Cargando temas...</p>
-            </div>
-        `;
-
-        const cabecera  = nodo.querySelector('.area-cabecera');
-        const temasDiv  = nodo.querySelector('.area-temas');
-        let   cargados  = false;
-
-        const toggleArea = async () => {
-            const estaAbierta = nodo.classList.contains('abierta');
-            if (estaAbierta) {
-                nodo.classList.remove('abierta');
-                cabecera.classList.remove('expandida');
-                cabecera.setAttribute('aria-expanded', 'false');
-                return;
-            }
-
-            nodo.classList.add('abierta');
-            cabecera.classList.add('expandida');
-            cabecera.setAttribute('aria-expanded', 'true');
-
-            if (cargados) return;
-            cargados = true;
-
-            try {
-                const temas = await ctrl.cargarTemasPorArea(area.idAreaConocimiento);
-                if (!temas.length) {
-                    temasDiv.innerHTML = '<p class="sin-temas">Esta área no tiene temas registrados.</p>';
-                    return;
-                }
-                temasDiv.innerHTML = temas.map(t =>
+            const temasHtml = area.temas?.length
+                ? area.temas.map(t =>
                     `<div class="tema-item">
                         <span class="tema-dot"></span>
                         <span>${t.nombreTema}</span>
-                    </div>`
-                ).join('');
-            } catch {
-                temasDiv.innerHTML =
-                    '<p style="color:var(--color-danger);font-size:.9rem;">Error al cargar temas.</p>';
-                cargados = false;
-            }
+                    </div>`).join('')
+                : '<p class="sin-temas">Esta área no tiene temas registrados.</p>';
+
+            nodo.innerHTML = `
+                <div class="area-cabecera" role="button" tabindex="0"
+                     aria-expanded="false" aria-controls="temas-${area.idAreaConocimiento}">
+                    <span class="area-titulo">${area.nombreArea}</span>
+                    <span class="area-icono-toggle" aria-hidden="true">▶</span>
+                </div>
+                <div class="area-temas" id="temas-${area.idAreaConocimiento}" role="region">
+                    ${temasHtml}
+                </div>
+            `;
+
+            const cabecera = nodo.querySelector('.area-cabecera');
+            const toggle = () => {
+                const abierta = nodo.classList.toggle('abierta');
+                cabecera.classList.toggle('expandida', abierta);
+                cabecera.setAttribute('aria-expanded', String(abierta));
+            };
+
+            cabecera.addEventListener('click', toggle);
+            cabecera.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            });
+
+            return nodo;
         };
 
-        cabecera.addEventListener('click', toggleArea);
-        cabecera.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleArea(); }
-        });
+        const renderError = (err) => {
+            const esCaida = err instanceof TypeError && err.message.includes('fetch');
+            listaEl.innerHTML = esCaida
+                ? '<p class="text-danger text-center">⚠ Backend no disponible — comprueba que el servidor esté encendido.</p>'
+                : `<p class="text-danger text-center">Error al cargar áreas: ${err.message}</p>`;
+        };
 
-        return nodo;
-    };
-
-    const renderError = (err) => {
-        const esCaida = err instanceof TypeError && err.message.includes('fetch');
-        listaEl.innerHTML = esCaida
-            ? '<p class="text-danger text-center">⚠ Backend no disponible — comprueba que el servidor esté encendido.</p>'
-            : `<p class="text-danger text-center">Error al cargar áreas: ${err.message}</p>`;
-    };
-
-    // ── Cargar áreas y construir árbol ──
-    ctrl.cargarTodas()
-        .then(areas => {
-            if (!areas.length) {
-                listaEl.innerHTML = '<p class="text-muted text-center">No hay áreas de conocimiento registradas.</p>';
-                return;
-            }
-            listaEl.innerHTML = '';
-            const ordenadas = [...areas].sort((a, b) => a.nombreArea.localeCompare(b.nombreArea));
-            ordenadas.forEach(area => listaEl.appendChild(crearNodoArea(area)));
-        })
-        .catch(renderError);
+        // ── Una sola llamada al backend — ya filtrado y ordenado ──
+        ctrl.cargarPorPrueba(prueba.idPruebaAdmision)
+            .then(areas => {
+                if (!areas.length) {
+                    listaEl.innerHTML = '<p class="text-muted text-center">Este proceso no tiene áreas de conocimiento asignadas.</p>';
+                    return;
+                }
+                listaEl.innerHTML = '';
+                areas.forEach(area => listaEl.appendChild(crearNodoArea(area)));
+            })
+            .catch(renderError);
+    }
 </script>
