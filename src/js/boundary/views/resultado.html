@@ -1,0 +1,204 @@
+<!-- ============================================================
+     VISTA: RESULTADO / ESTADO DE PRUEBA  (#/resultado)
+     Fragmento inyectado por el router en <main id="app-content">.
+     Controller: ExamenController  →  GET /examen_realizado/aspirante/{idAspirante}
+     Campos BE:  idExamenRealizado, inscripcionesPrueba, claveExamen,
+                 etapaAdmision, puntajeFinal (null=pendiente), fechaRealizacion
+
+     Flujo:
+       1. Si store.aspirante.id existe → auto-consulta al cargar la página
+       2. Si no → el usuario ingresa su UUID de aspirante manualmente
+       La búsqueda por DUI no está disponible en el backend actual (no hay
+       endpoint GET /aspirantes?dui=...). Se usa el UUID del aspirante.
+     ============================================================ -->
+
+<style>
+    .consulta-wrap { max-width: 640px; margin: 0 auto; }
+    .examen-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: var(--space-md);
+    }
+    .examen-header {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-sm);
+    }
+    .examen-header h3 { margin: 0; color: var(--color-primary-dark); }
+    .badge-calificado { background:#D1FAE5; color:#065F46; font-size:.75rem;
+                        font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .badge-pendiente  { background:#FEF3C7; color:#92400E; font-size:.75rem;
+                        font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
+    .examen-grid { display:grid; grid-template-columns:140px 1fr;
+                   gap:var(--space-xs) var(--space-lg); font-size:.93rem; }
+    .examen-grid dt { color:var(--color-text-muted); }
+    .examen-grid dd { font-weight:500; margin:0; }
+    .puntaje-num { font-size:1.8rem; font-weight:700; color:var(--color-primary-dark); }
+    .input-id {
+        flex:1; min-width:200px; padding:var(--space-sm) var(--space-md);
+        border:1px solid var(--color-border); border-radius:var(--radius-md);
+        font-size:1rem; background:var(--color-surface); font-family:monospace;
+    }
+    .input-id:focus { outline:none; border-color:var(--color-primary);
+                      box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+</style>
+
+<h2 class="mb-md" style="color:var(--color-primary-dark);">Resultado de tu prueba</h2>
+<p class="text-muted mb-lg">
+    Consulta la fecha, estado y puntaje de tu prueba de admisión.
+</p>
+
+<!-- ── Panel de búsqueda manual ── -->
+<div class="consulta-wrap card mb-lg" id="panel-busqueda">
+    <div class="card-header">
+        <h3>Buscar por ID de aspirante</h3>
+        <p class="text-muted" style="font-size:.9rem; margin:var(--space-xs) 0 0;">
+            Ingresa el UUID que recibiste al registrarte.
+            Si acabas de registrarte en esta sesión, tus resultados se cargan automáticamente.
+        </p>
+    </div>
+    <div style="display:flex; gap:var(--space-md); align-items:flex-end; flex-wrap:wrap;">
+        <div class="form-group" style="flex:1;">
+            <label for="input-id" style="font-weight:500;">ID de aspirante (UUID)</label>
+            <input type="text" id="input-id" class="input-id"
+                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+        <button id="btn-buscar" class="btn btn-primary" style="align-self:flex-end;">
+            Consultar
+        </button>
+    </div>
+</div>
+
+<!-- ── Mensajes de estado ── -->
+<div id="msg-estado" class="consulta-wrap text-center hidden"
+     style="padding:var(--space-xl) 0; color:var(--color-text-muted);">
+</div>
+
+<!-- ── Lista de exámenes ── -->
+<div id="lista-resultados" class="consulta-wrap"></div>
+
+<script type="module">
+    // Rutas relativas al documento base index.html
+    import ExamenController from './js/control/examen_controller.js';
+    import { store } from './js/infra/app_state.js';
+
+    const ctrl        = new ExamenController();
+    const inputId     = document.getElementById('input-id');
+    const btnBuscar   = document.getElementById('btn-buscar');
+    const msgEstado   = document.getElementById('msg-estado');
+    const listaEl     = document.getElementById('lista-resultados');
+
+    const mostrarMensaje = (html) => {
+        listaEl.innerHTML = '';
+        msgEstado.innerHTML = html;
+        msgEstado.classList.remove('hidden');
+    };
+
+    const renderExamen = (ex) => {
+        const calificado = ex.puntajeFinal != null;
+        const badge = calificado
+            ? '<span class="badge-calificado">Calificado</span>'
+            : '<span class="badge-pendiente">Pendiente de calificación</span>';
+
+        const fecha = ex.fechaRealizacion
+            ? new Date(ex.fechaRealizacion).toLocaleString('es-SV', {
+                day:'2-digit', month:'long', year:'numeric',
+                hour:'2-digit', minute:'2-digit'
+              })
+            : '—';
+
+        const pruebaNombre = ex.claveExamen?.pruebaAdmision?.nombrePrueba
+            ?? ex.inscripcionesPrueba?.pruebaAdmision?.nombrePrueba
+            ?? 'Prueba de admisión';
+
+        const aspirante = ex.inscripcionesPrueba?.aspiranteDato;
+        const nombreAsp = aspirante
+            ? `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim()
+            : '—';
+
+        return `
+            <div class="examen-card">
+                <div class="examen-header">
+                    <h3>${pruebaNombre}</h3>
+                    ${badge}
+                </div>
+                ${calificado ? `
+                    <div style="text-align:center; margin:var(--space-md) 0;">
+                        <p style="font-size:.85rem; color:var(--color-text-muted); margin-bottom:4px;">Puntaje obtenido</p>
+                        <span class="puntaje-num">${ex.puntajeFinal}</span>
+                    </div>` : ''}
+                <dl class="examen-grid">
+                    <dt>Aspirante</dt>
+                    <dd>${nombreAsp}</dd>
+                    <dt>Fecha de realización</dt>
+                    <dd>${fecha}</dd>
+                    <dt>Etapa</dt>
+                    <dd>${ex.etapaAdmision?.nombre ?? '—'}</dd>
+                    <dt>ID del examen</dt>
+                    <dd style="font-size:.8rem; color:var(--color-text-muted);">${ex.idExamenRealizado}</dd>
+                </dl>
+            </div>
+        `;
+    };
+
+    const buscarResultados = async (aspiranteId) => {
+        if (!aspiranteId) {
+            mostrarMensaje('Ingresa tu ID de aspirante para consultar.');
+            return;
+        }
+        mostrarMensaje('Consultando resultados...');
+
+        try {
+            const examenes = await ctrl.consultarResultados(aspiranteId);
+            msgEstado.classList.add('hidden');
+
+            if (!examenes.length) {
+                mostrarMensaje(
+                    'No se encontraron exámenes para este aspirante.<br>' +
+                    '<span style="font-size:.9rem;">Si acabas de inscribirte, ' +
+                    'el examen aparecerá cuando sea iniciado y procesado por el sistema.</span>'
+                );
+                return;
+            }
+
+            // Ordenar: calificados primero, luego pendientes; dentro de cada grupo, más reciente primero
+            const ordenados = [...examenes].sort((a, b) => {
+                if ((b.puntajeFinal != null) !== (a.puntajeFinal != null)) {
+                    return (b.puntajeFinal != null) ? 1 : -1;
+                }
+                return new Date(b.fechaRealizacion ?? 0) - new Date(a.fechaRealizacion ?? 0);
+            });
+
+            listaEl.innerHTML = ordenados.map(renderExamen).join('');
+        } catch (error) {
+            const esCaida = error instanceof TypeError && error.message.includes('fetch');
+            mostrarMensaje(esCaida
+                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
+                : `Error al consultar resultados: ${error.message}`
+            );
+        }
+    };
+
+    // ── Auto-consulta si hay sesión activa ──
+    const aspId = store.aspirante?.id;
+    if (aspId) {
+        inputId.value = aspId;
+        buscarResultados(aspId);
+    }
+
+    // ── Búsqueda manual ──
+    btnBuscar.addEventListener('click', () => {
+        const id = inputId.value.trim();
+        if (!id) {
+            document.querySelector('app-toast')?.show('Ingresa tu ID de aspirante.', 3000, 'warning');
+            return;
+        }
+        buscarResultados(id);
+    });
+
+    inputId.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btnBuscar.click();
+    });
+</script>

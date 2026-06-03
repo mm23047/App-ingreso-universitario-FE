@@ -57,16 +57,6 @@
     .paso-card h3 { color: var(--color-primary-dark); margin-bottom: var(--space-sm); }
     .paso-card p  { color: var(--color-text-muted); font-size: .9rem; margin: 0; }
 
-    .demo-section {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        text-align: center;
-    }
-
-    .demo-section h2 { color: var(--color-primary-dark); margin-bottom: var(--space-sm); }
-    .demo-section p  { color: var(--color-text-muted); margin-bottom: var(--space-lg); font-size: .9rem; }
 </style>
 
 <!-- ── 1. HERO ── -->
@@ -120,25 +110,7 @@
     </div>
 </section>
 
-<!-- ── 3. DEMOSTRACIÓN WEB COMPONENT ── -->
-<section class="demo-section mb-lg">
-    <h2>Aspirantes registrados hoy</h2>
-    <p>Contador en tiempo real — Web Component con Shadow DOM, template y slot</p>
-
-    <div style="display: flex; gap: var(--space-xl); justify-content: center; flex-wrap: wrap;">
-
-        <app-contador intervalo="2000" inicial="0">
-            <span slot="label"><h3 style="color: var(--color-primary);">Mañana</h3></span>
-        </app-contador>
-
-        <app-contador intervalo="3000" inicial="0">
-            <span slot="label"><h3 style="color: var(--color-secondary);">Tarde</h3></span>
-        </app-contador>
-
-    </div>
-</section>
-
-<!-- ── 4. CTA ── -->
+<!-- ── 3. CTA ── -->
 <section class="grid grid-cols-1" style="text-align: center; padding: var(--space-xl) 0;">
     <div>
         <p style="font-size:1.1rem; color: var(--color-text-muted); margin-bottom: var(--space-lg);">
@@ -147,6 +119,7 @@
         <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
             <a href="#/registro" class="btn btn-primary">Registrarme ahora</a>
             <a href="#/carreras" class="btn btn-outline">Ver carreras disponibles</a>
+            <a href="#/procesos" class="btn btn-outline">Consultar procesos de ingreso</a>
         </div>
     </div>
 </section>

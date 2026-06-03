@@ -114,11 +114,27 @@ class ExamenController {
             document.querySelector('app-toast')?.show(
                 'Examen entregado. El puntaje será calculado por el sistema.', 5000, 'success'
             );
-            navigate('/resultados');
+            navigate('/resultado');
         } catch (error) {
             console.error('Error al entregar examen:', error);
             document.querySelector('app-toast')?.show(
                 `Error al entregar el examen: ${error.message}`, 5000, 'error'
+            );
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
+
+    async consultarResultados(aspiranteId) {
+        if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
+        store.loading = true;
+        try {
+            return await this.examenRealizadoDao.obtenerPorAspirante(aspiranteId);
+        } catch (error) {
+            console.error('Error al consultar resultados del aspirante:', error);
+            document.querySelector('app-toast')?.show(
+                `Error al consultar resultados: ${error.message}`, 4000, 'error'
             );
             throw error;
         } finally {

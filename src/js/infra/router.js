@@ -1,13 +1,12 @@
 import { store } from './app_state.js';
 
 export const RUTAS = {
-    '/': 'home',
-    '/registro': 'registro',
-    '/carreras': 'carreras',
-    '/turnos': 'turnos',
-    '/inscripcion': 'inscripcion',
-    '/examen': 'examen',
-    '/resultados': 'resultados'
+    '/':          'home',
+    '/carreras':  'carreras',
+    '/registro':  'registro',
+    '/procesos':  'procesos',
+    '/areas':     'areas',
+    '/resultado': 'resultado',
 };
 
 const _obtenerHashActual = () => {

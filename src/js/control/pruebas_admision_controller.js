@@ -44,6 +44,21 @@ class PruebasAdmisionController {
             store.loading = false;
         }
     }
+
+    async cargarTodas(first = 0, max = 50) {
+        store.loading = true;
+        try {
+            return await this.pruebasDao.obtenerTodas(first, max);
+        } catch (error) {
+            console.error('Error al cargar pruebas de admisión:', error);
+            document.querySelector('app-toast')?.show(
+                `Error al cargar procesos: ${error.message}`, 4000, 'error'
+            );
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
 }
 
 export default PruebasAdmisionController;

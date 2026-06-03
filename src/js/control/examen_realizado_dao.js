@@ -4,10 +4,11 @@ import PreguntasPorClave from '../entity/PreguntasPorClave.js';
 import Pregunta from '../entity/Pregunta.js';
 
 // Resource: ExamenRealizadoResource  @Path("examen_realizado")
-// POST /examen_realizado                body: { idInscripcion: UUID, idEtapa: UUID }  → 201
+// POST /examen_realizado                       body: { idInscripcion: UUID, idEtapa: UUID }  → 201
 // GET  /examen_realizado/{id}
-// GET  /examen_realizado/{id}/preguntas → PreguntasPorClave[] (con bancoPregunta JOIN FETCH)
-// POST /examen_realizado/{id}/calificar (proceso admin, no lo llama el aspirante)
+// GET  /examen_realizado/{id}/preguntas        → PreguntasPorClave[] con bancoPregunta
+// POST /examen_realizado/{id}/calificar        (proceso admin)
+// GET  /examen_realizado/aspirante/{idAspirante} → ExamenRealizado[] del aspirante
 class ExamenRealizadoDao extends DefaultDao {
     constructor() {
         super();
@@ -65,6 +66,22 @@ class ExamenRealizadoDao extends DefaultDao {
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
             console.error('Error al obtener examen:', error);
+            throw error;
+        }
+    }
+
+    async obtenerPorAspirante(aspiranteId) {
+        if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
+        try {
+            const respuesta = await fetch(`${this.BASE_URL}/aspirante/${aspiranteId}`, { method: 'GET' });
+            if (respuesta.status === 200) {
+                return (await respuesta.json()).map(d => this._mapear(d));
+            }
+            if (respuesta.status === 400) throw new Error('ID de aspirante con formato inválido');
+            if (respuesta.status === 404) return [];
+            throw new Error(`Error HTTP: ${respuesta.status}`);
+        } catch (error) {
+            console.error('Error al obtener exámenes del aspirante:', error);
             throw error;
         }
     }

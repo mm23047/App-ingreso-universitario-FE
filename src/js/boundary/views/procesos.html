@@ -1,0 +1,149 @@
+<!-- ============================================================
+     VISTA: PROCESOS DE INGRESO  (#/procesos)
+     Fragmento inyectado por el router en <main id="app-content">.
+     Controller: PruebasAdmisionController  →  GET /pruebas_admision?first=0&max=50
+     Campos BE:  idPruebaAdmision (UUID), nombrePrueba (String), anio (Integer), activa (Boolean)
+     Orden:      cronológico descendente (anio más reciente primero)
+     Filtro:     cliente — por nombrePrueba o anio
+     ============================================================ -->
+
+<style>
+    .proceso-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--transition);
+    }
+    .proceso-card:hover { box-shadow: var(--shadow-md); }
+    .badge-activo   { display:inline-block; background:#D1FAE5; color:#065F46;
+                      font-size:.75rem; font-weight:700; padding:2px 10px;
+                      border-radius:var(--radius-full); }
+    .badge-inactivo { display:inline-block; background:#F3F4F6; color:var(--color-text-muted);
+                      font-size:.75rem; font-weight:700; padding:2px 10px;
+                      border-radius:var(--radius-full); }
+    .proceso-meta   { display:grid; grid-template-columns:max-content 1fr;
+                      gap:var(--space-xs) var(--space-lg); margin-top:var(--space-md);
+                      font-size:.92rem; }
+    .proceso-meta dt { color:var(--color-text-muted); }
+    .proceso-meta dd { font-weight:500; margin:0; }
+    .buscador {
+        width:100%; padding:var(--space-sm) var(--space-md);
+        border:1px solid var(--color-border); border-radius:var(--radius-md);
+        font-size:1rem; background:var(--color-surface);
+    }
+    .buscador:focus { outline:none; border-color:var(--color-primary);
+                      box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    .sin-resultados { text-align:center; padding:var(--space-2xl) 0; color:var(--color-text-muted); }
+</style>
+
+<h2 class="mb-md" style="color:var(--color-primary-dark);">Procesos de ingreso</h2>
+<p class="text-muted mb-lg">
+    Lista de todos los procesos de admisión registrados, ordenados del más reciente al más antiguo.
+</p>
+
+<!-- ── Buscador ── -->
+<div class="mb-lg" style="max-width:480px;">
+    <label for="buscador" style="display:block; font-weight:500; margin-bottom:var(--space-xs);">
+        Buscar proceso
+    </label>
+    <input type="search" id="buscador" class="buscador"
+           placeholder="Nombre del proceso o año…" autocomplete="off">
+</div>
+
+<!-- ── Lista de procesos ── -->
+<div id="lista-procesos">
+    <p class="text-muted text-center">Cargando procesos de admisión...</p>
+</div>
+
+<script type="module">
+    // Rutas relativas al documento base index.html
+    import PruebasAdmisionController from './js/control/pruebas_admision_controller.js';
+    import { store } from './js/infra/app_state.js';
+    import { navigate } from './js/infra/router.js';
+
+    const ctrl    = new PruebasAdmisionController();
+    const lista   = document.getElementById('lista-procesos');
+    const buscador = document.getElementById('buscador');
+
+    let todasLasPruebas = [];
+
+    const renderPrueba = (p) => {
+        const badge = p.activa
+            ? '<span class="badge-activo">Activo</span>'
+            : '<span class="badge-inactivo">Inactivo</span>';
+        return `
+            <div class="proceso-card mb-md">
+                ${badge}
+                <h3 style="color:var(--color-primary-dark); margin:var(--space-xs) 0;">
+                    ${p.nombrePrueba}
+                </h3>
+                <dl class="proceso-meta">
+                    <dt>Año</dt>
+                    <dd>${p.anio ?? '—'}</dd>
+                    <dt>ID del proceso</dt>
+                    <dd style="font-size:.8rem; color:var(--color-text-muted);">${p.idPruebaAdmision}</dd>
+                </dl>
+                <div class="mt-md" style="display:flex; gap:var(--space-md); flex-wrap:wrap;">
+                    <button class="btn btn-outline btn-ver-areas"
+                            style="font-size:.9rem;"
+                            data-id="${p.idPruebaAdmision}"
+                            data-nombre="${p.nombrePrueba}"
+                            data-anio="${p.anio}"
+                            data-activa="${p.activa}">
+                        Ver áreas de conocimiento →
+                    </button>
+                </div>
+            </div>
+        `;
+    };
+
+    const renderLista = (pruebas) => {
+        if (!pruebas.length) {
+            lista.innerHTML = '<div class="sin-resultados">No se encontraron procesos.</div>';
+            return;
+        }
+        lista.innerHTML = pruebas.map(renderPrueba).join('');
+
+        // Botones "Ver áreas": guardan la prueba en store y navegan
+        lista.querySelectorAll('.btn-ver-areas').forEach(btn => {
+            btn.addEventListener('click', () => {
+                store.prueba = {
+                    idPruebaAdmision: btn.dataset.id,
+                    nombrePrueba:     btn.dataset.nombre,
+                    anio:             Number(btn.dataset.anio),
+                    activa:           btn.dataset.activa === 'true',
+                };
+                navigate('/areas');
+            });
+        });
+    };
+
+    const renderError = (err) => {
+        const esCaida = err instanceof TypeError && err.message.includes('fetch');
+        lista.innerHTML = esCaida
+            ? '<p class="text-danger text-center">⚠ Backend no disponible.</p>'
+            : `<p class="text-danger text-center">Error al cargar procesos: ${err.message}</p>`;
+    };
+
+    // ── Cargar y ordenar ──
+    ctrl.cargarTodas()
+        .then(pruebas => {
+            // Orden cronológico descendente (más reciente primero)
+            todasLasPruebas = [...pruebas].sort((a, b) => (b.anio ?? 0) - (a.anio ?? 0));
+            renderLista(todasLasPruebas);
+        })
+        .catch(renderError);
+
+    // ── Filtro por texto en tiempo real ──
+    buscador.addEventListener('input', () => {
+        const q = buscador.value.toLowerCase().trim();
+        if (!q) { renderLista(todasLasPruebas); return; }
+        const filtradas = todasLasPruebas.filter(p =>
+            p.nombrePrueba.toLowerCase().includes(q) ||
+            String(p.anio).includes(q)
+        );
+        renderLista(filtradas);
+    });
+</script>

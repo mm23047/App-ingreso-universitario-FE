@@ -1,95 +1,313 @@
 <!-- ============================================================
      VISTA: REGISTRO DE ASPIRANTE  (#/registro)
      Fragmento inyectado por el router en <main id="app-content">.
-     Controller: AspirantesController
-     DAO:        AspirantesDao  →  POST /aspirantes
-     Campos reales del backend: nombres, apellidos, fechaNacimiento (YYYY-MM-DD),
-                                dui (00000000-0), correo, usaSillaRuedas (boolean)
+
+     Flujo completo:
+       1. POST /aspirantes                              → AspirantesController.registrar()
+          body: {nombres,apellidos,fechaNacimiento,dui,correo,usaSillaRuedas}
+          409 si DUI o correo ya existen
+       2. GET  /pruebas_admision/activas                → pruebasDao.obtenerActivas()
+       3. POST /aspirantes/{id}/inscripciones           → aspirantesDao.crearInscripcion()
+          body: {pruebaAdmision:{idPruebaAdmision}}
+       4. POST /inscripciones_prueba/{id}/carreras × N  → carrerasElegidaDao.agregarCarrera()
+          body: {catalogoCarrera:{idCarrera},prioridad}
      ============================================================ -->
 
 <style>
-    .registro-card {
-        max-width: 600px;
-        margin: 0 auto;
+    .reg-section { max-width: 640px; margin: 0 auto; }
+    .prioridad-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 28px; height: 28px;
+        background: var(--color-primary); color: white;
+        border-radius: var(--radius-full); font-size: .8rem; font-weight: 700; flex-shrink: 0;
     }
+    .sel-row { display: flex; align-items: center; gap: var(--space-md); }
+    .sel-row select {
+        flex: 1; padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--color-border); border-radius: var(--radius-md);
+        font-size: 1rem; background: var(--color-surface);
+    }
+    .sel-row select:focus {
+        outline: none; border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .alerta-duplicado {
+        background: #FEF3C7; border: 1.5px solid #F59E0B;
+        border-radius: var(--radius-lg); padding: var(--space-lg);
+        max-width: 640px; margin: 0 auto;
+    }
+    .alerta-duplicado h3 { color: #92400E; margin: 0 0 var(--space-sm); }
+    .alerta-duplicado p  { color: #78350F; font-size: .95rem; margin: 0; }
+    .exito-panel {
+        background: #F0FDF4; border: 1.5px solid #86EFAC;
+        border-radius: var(--radius-lg); padding: var(--space-xl);
+        max-width: 640px; margin: 0 auto;
+    }
+    .exito-panel h2 { color: #166534; margin: 0 0 var(--space-md); }
+    .dato-fila { display: flex; gap: var(--space-md); padding: var(--space-sm) 0;
+        border-bottom: 1px solid #BBF7D0; font-size: .95rem; }
+    .dato-fila:last-child { border-bottom: none; }
+    .dato-fila dt { color: #166534; min-width: 120px; font-weight: 500; }
+    .dato-fila dd { margin: 0; color: #14532D; }
+    .carrera-chip {
+        display: inline-flex; align-items: center; gap: var(--space-xs);
+        background: #DCFCE7; color: #166534; border-radius: var(--radius-full);
+        padding: 3px 10px; font-size: .85rem; font-weight: 500; margin: 2px;
+    }
+    .carrera-chip span { background: #166534; color: white; border-radius: 50%;
+        min-width: 18px; height: 18px; display: inline-flex; align-items: center;
+        justify-content: center; font-size: .7rem; font-weight: 700; }
 </style>
 
-<div class="registro-card card">
+<!-- ── Sección 1: Datos personales ── -->
+<div id="sec-datos" class="reg-section card mb-lg">
     <div class="card-header">
-        <h2>Registro de Aspirante</h2>
+        <h2>1. Datos personales</h2>
         <p class="text-muted">Completa todos los campos para crear tu perfil de ingreso.</p>
     </div>
 
-    <form id="form-registro" novalidate>
-
+    <form id="form-datos" novalidate>
         <div class="grid grid-cols-2 gap-md">
-
             <div class="form-group">
                 <label for="nombres">Nombres</label>
                 <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required>
-                <span class="form-error" id="error-nombres"></span>
             </div>
-
             <div class="form-group">
                 <label for="apellidos">Apellidos</label>
                 <input type="text" id="apellidos" name="apellidos" placeholder="Ej. García López" required>
-                <span class="form-error" id="error-apellidos"></span>
             </div>
-
         </div>
-
         <div class="grid grid-cols-2 gap-md mt-md">
-
             <div class="form-group">
                 <label for="dui">DUI</label>
                 <input type="text" id="dui" name="dui" placeholder="00000000-0" maxlength="10" required>
-                <span class="form-error" id="error-dui"></span>
             </div>
-
             <div class="form-group">
                 <label for="fechaNacimiento">Fecha de nacimiento</label>
                 <input type="date" id="fechaNacimiento" name="fechaNacimiento" required>
-                <span class="form-error" id="error-fechaNacimiento"></span>
             </div>
-
         </div>
-
         <div class="form-group mt-md">
             <label for="correo">Correo electrónico</label>
             <input type="email" id="correo" name="correo" placeholder="tu@correo.com" required>
-            <span class="form-error" id="error-correo"></span>
         </div>
-
-        <div class="form-group mt-md" style="flex-direction: row; align-items: center; gap: var(--space-sm);">
-            <input type="checkbox" id="usaSillaRuedas" name="usaSillaRuedas" style="width: auto;">
-            <label for="usaSillaRuedas" style="font-weight: normal;">Requiero espacio accesible para silla de ruedas</label>
+        <div class="form-group mt-md" style="flex-direction:row;align-items:center;gap:var(--space-sm);">
+            <input type="checkbox" id="usaSillaRuedas" name="usaSillaRuedas" style="width:auto;">
+            <label for="usaSillaRuedas" style="font-weight:normal;">
+                Requiero espacio accesible para silla de ruedas
+            </label>
         </div>
-
-        <div class="mt-lg" style="display: flex; gap: var(--space-md); justify-content: flex-end;">
-            <button type="reset" class="btn btn-outline">Limpiar</button>
-            <button type="submit" class="btn btn-primary" id="btn-registrar">Crear perfil</button>
-        </div>
-
     </form>
 </div>
 
+<!-- ── Sección 2: Carreras de interés ── -->
+<div id="sec-carreras" class="reg-section card">
+    <div class="card-header">
+        <h2>2. Carreras de interés</h2>
+        <p class="text-muted">
+            Selecciona hasta 3 carreras en orden de preferencia (Prioridad 1 = primera opción).
+        </p>
+    </div>
+
+    <div id="estado-carreras" class="text-muted text-center" style="padding:var(--space-lg) 0;">
+        Cargando carreras disponibles...
+    </div>
+
+    <div id="sels-carreras" class="hidden">
+        <div class="form-group">
+            <div class="sel-row">
+                <span class="prioridad-badge" title="Primera preferencia">1</span>
+                <select id="c1" aria-label="Primera preferencia" required>
+                    <option value="">— Primera opción (obligatoria) —</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group mt-md">
+            <div class="sel-row">
+                <span class="prioridad-badge" style="background:var(--color-secondary);" title="Segunda preferencia">2</span>
+                <select id="c2" aria-label="Segunda preferencia">
+                    <option value="">— Segunda opción (opcional) —</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group mt-md">
+            <div class="sel-row">
+                <span class="prioridad-badge" style="background:var(--color-text-muted);" title="Tercera preferencia">3</span>
+                <select id="c3" aria-label="Tercera preferencia">
+                    <option value="">— Tercera opción (opcional) —</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-lg" style="display:flex;gap:var(--space-md);justify-content:flex-end;">
+        <button type="reset" form="form-datos" class="btn btn-outline" id="btn-limpiar">Limpiar</button>
+        <button type="button" class="btn btn-primary" id="btn-registrar">
+            Registrar y continuar →
+        </button>
+    </div>
+</div>
+
+<!-- ── Panel: DUI/correo duplicado ── -->
+<div id="panel-duplicado" class="alerta-duplicado hidden">
+    <h3>⚠ Ya existe una cuenta asociada a estos datos</h3>
+    <p>
+        Los datos ingresados (DUI o correo) ya están registrados en el sistema.<br>
+        Si ya tienes una cuenta, puedes <a href="#/resultado" style="color:#92400E;text-decoration:underline;">
+        consultar el estado de tu proceso</a> directamente.<br>
+        Si crees que es un error, contacta a la administración del proceso de ingreso.
+    </p>
+</div>
+
+<!-- ── Panel: Confirmación de éxito ── -->
+<div id="panel-exito" class="exito-panel hidden">
+    <h2>✓ Registro completado</h2>
+    <p style="color:#166534; margin-bottom:var(--space-md);">
+        Tu perfil de aspirante fue creado y quedaste inscrito en el proceso de admisión.
+    </p>
+    <dl id="resumen-datos" style="margin-bottom:var(--space-md);"></dl>
+    <div id="resumen-carreras" style="margin-bottom:var(--space-lg);"></div>
+    <div id="aviso-sin-proceso" class="hidden"
+         style="background:#FEF3C7;border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);">
+        <p style="margin:0;color:#78350F;font-size:.9rem;">
+            ⚠ No hay proceso de admisión activo actualmente.
+            Tu perfil fue creado, pero las carreras de interés no pudieron registrarse todavía.
+            Vuelve cuando haya un proceso activo para completar tu selección.
+        </p>
+    </div>
+    <a href="#/procesos" class="btn btn-primary">Ver procesos de admisión →</a>
+</div>
+
 <script type="module">
-    import AspirantesController from '../../control/aspirantes_controller.js';
-    import { navigate } from '../../infra/router.js';
+    // Rutas relativas al documento base index.html
+    import AspirantesController  from './js/control/aspirantes_controller.js';
+    import InscripcionesController from './js/control/inscripciones_controller.js';
+    import CarrerasController    from './js/control/carreras_controller.js';
+    import { store } from './js/infra/app_state.js';
 
-    const controller = new AspirantesController();
-    const form = document.getElementById('form-registro');
+    const aspCtrl  = new AspirantesController();
+    const inscCtrl = new InscripcionesController();
+    const carrCtrl = new CarrerasController();
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const datos = Object.fromEntries(new FormData(form));
-        datos.usaSillaRuedas = form.usaSillaRuedas.checked;
+    const secDatos       = document.getElementById('sec-datos');
+    const secCarreras    = document.getElementById('sec-carreras');
+    const estadoCarreras = document.getElementById('estado-carreras');
+    const selsCarreras   = document.getElementById('sels-carreras');
+    const panelDuplicado = document.getElementById('panel-duplicado');
+    const panelExito     = document.getElementById('panel-exito');
+    const btnRegistrar   = document.getElementById('btn-registrar');
+    const selectIds      = ['c1','c2','c3'];
+    const placeholders   = ['— Primera opción (obligatoria) —','— Segunda opción (opcional) —','— Tercera opción (opcional) —'];
 
-        try {
-            await controller.registrar(datos);
-            navigate('/carreras');
-        } catch (_) {
-            // El controller ya muestra el toast de error
+    // ── Cargar carreras en los selects ──
+    carrCtrl.cargarTodas()
+        .then(carreras => {
+            if (!carreras.length) {
+                estadoCarreras.textContent = 'No hay carreras disponibles en este momento.';
+                return;
+            }
+            const opts = carreras
+                .map(c => `<option value="${c.idCarrera}">${c.nombreCatalogoCarrera}</option>`)
+                .join('');
+            selectIds.forEach((id, i) => {
+                document.getElementById(id).innerHTML =
+                    `<option value="">${placeholders[i]}</option>${opts}`;
+            });
+            estadoCarreras.classList.add('hidden');
+            selsCarreras.classList.remove('hidden');
+        })
+        .catch(() => {
+            estadoCarreras.innerHTML =
+                '<span style="color:var(--color-danger);">⚠ No se pudieron cargar las carreras. Verifica la conexión.</span>';
+        });
+
+    // ── Nombre de carrera por id (para mostrar en el resumen) ──
+    const nombreCarrera = (id) => {
+        const opt = document.querySelector(`#sels-carreras option[value="${id}"]`);
+        return opt?.textContent ?? id;
+    };
+
+    // ── Envío del formulario ──
+    btnRegistrar.addEventListener('click', async () => {
+        const form = document.getElementById('form-datos');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        const dui = document.getElementById('dui').value.trim();
+        if (!/^\d{8}-\d$/.test(dui)) {
+            document.querySelector('app-toast')?.show('El DUI debe tener el formato 00000000-0.', 4000, 'warning');
+            return;
         }
+        if (!document.getElementById('c1').value) {
+            document.querySelector('app-toast')?.show('Selecciona al menos una carrera como primera preferencia.', 4000, 'warning');
+            return;
+        }
+
+        btnRegistrar.disabled = true;
+        btnRegistrar.textContent = 'Registrando...';
+
+        // Paso 1: Crear aspirante. Si hay 409 = DUI/correo duplicado → panel de duplicado.
+        const datos = {
+            nombres:         document.getElementById('nombres').value.trim(),
+            apellidos:       document.getElementById('apellidos').value.trim(),
+            dui,
+            fechaNacimiento: document.getElementById('fechaNacimiento').value,
+            correo:          document.getElementById('correo').value.trim(),
+            usaSillaRuedas:  document.getElementById('usaSillaRuedas').checked,
+        };
+        try {
+            await aspCtrl.registrar(datos);
+        } catch (errorRegistro) {
+            btnRegistrar.disabled = false;
+            btnRegistrar.textContent = 'Registrar y continuar →';
+            if (errorRegistro.message.includes('409')) {
+                secDatos.classList.add('hidden');
+                secCarreras.classList.add('hidden');
+                panelDuplicado.classList.remove('hidden');
+            }
+            return;
+        }
+
+        // Paso 2-4: Inscripción y carreras (aspirante creado exitosamente)
+        try {
+            const carrerasConPrioridad = selectIds
+                .map((id, i) => ({ idCarrera: document.getElementById(id).value, prioridad: i + 1 }))
+                .filter(c => c.idCarrera !== '');
+
+            const resultado = await inscCtrl.inscribirConCarreras(store.aspirante?.id, carrerasConPrioridad);
+
+            secDatos.classList.add('hidden');
+            secCarreras.classList.add('hidden');
+
+            const asp = store.aspirante;
+            document.getElementById('resumen-datos').innerHTML = `
+                <div class="dato-fila"><dt>Nombre</dt><dd>${asp?.nombres ?? ''} ${asp?.apellidos ?? ''}</dd></div>
+                <div class="dato-fila"><dt>DUI</dt><dd>${asp?.dui ?? ''}</dd></div>
+                <div class="dato-fila"><dt>Correo</dt><dd>${asp?.correo ?? ''}</dd></div>
+                <div class="dato-fila"><dt>Proceso</dt><dd>${store.prueba?.nombrePrueba ?? '—'} (${store.prueba?.anio ?? '—'})</dd></div>
+            `;
+
+            if (resultado) {
+                const chips = carrerasConPrioridad.map(c =>
+                    `<span class="carrera-chip"><span>${c.prioridad}</span>${nombreCarrera(c.idCarrera)}</span>`
+                ).join('');
+                document.getElementById('resumen-carreras').innerHTML =
+                    `<p style="margin-bottom:var(--space-xs);color:#166534;font-weight:500;">Carreras registradas:</p>${chips}`;
+            } else {
+                document.getElementById('aviso-sin-proceso').classList.remove('hidden');
+            }
+
+            panelExito.classList.remove('hidden');
+
+        } catch {
+            // El controller ya mostró el toast con el mensaje correcto (inscripción fallida)
+            btnRegistrar.disabled = false;
+            btnRegistrar.textContent = 'Registrar y continuar →';
+        }
+    });
+
+    document.getElementById('btn-limpiar').addEventListener('click', () => {
+        panelDuplicado.classList.add('hidden');
+        secDatos.classList.remove('hidden');
+        secCarreras.classList.remove('hidden');
     });
 </script>
