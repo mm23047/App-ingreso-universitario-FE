@@ -35,8 +35,21 @@ class AspirantesDao extends DefaultDao {
                 body: JSON.stringify(aspiranteData)
             });
             if (respuesta.status === 201) return this._mapear(await respuesta.json());
-            const errorBody = await respuesta.text().catch(() => '');
-            throw new Error(`Error HTTP: ${respuesta.status}${errorBody ? ' - ' + errorBody : ''}`);
+
+            // Intentar parsear ErrorNegocioDTO estructurado del backend
+            let errorData = null;
+            try {
+                const cuerpo = await respuesta.text();
+                if (cuerpo) {
+                    try { errorData = JSON.parse(cuerpo); } catch { errorData = { mensaje: cuerpo }; }
+                }
+            } catch { /* ignorar fallos en lectura del body */ }
+
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus  = respuesta.status;
+            err.tipo        = errorData?.tipo    ?? null;   // 'EDAD_MINIMA' | 'DUI_DUPLICADO' | 'CORREO_DUPLICADO' | null
+            err.mensajeNegocio = errorData?.mensaje ?? null;
+            throw err;
         } catch (error) {
             console.error('Error al crear aspirante:', error);
             throw error;
