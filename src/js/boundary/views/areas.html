@@ -55,6 +55,62 @@
         color: var(--color-text-muted); font-size: .9rem; padding: var(--space-sm) 0;
     }
     .sin-temas { color: var(--color-text-muted); font-size: .9rem; font-style: italic; }
+
+    /* ── Tema expandible (tiene subtemas) ── */
+    .tema-item.tiene-subtemas {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        padding: 0;
+        cursor: default;
+    }
+    .tema-cabecera {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        width: 100%;
+        padding: var(--space-xs) 0;
+        cursor: pointer;
+        user-select: none;
+    }
+    .tema-icono-toggle {
+        font-size: .75rem;
+        color: var(--color-primary);
+        transition: transform .2s;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .tema-item.tiene-subtemas.abierto .tema-icono-toggle {
+        transform: rotate(90deg);
+    }
+
+    /* ── Subtemas (tercer nivel) ── */
+    .subtemas-lista {
+        display: none;
+        width: 100%;
+        padding-left: calc(8px + var(--space-md) + var(--space-md));
+        padding-bottom: var(--space-xs);
+    }
+    .tema-item.tiene-subtemas.abierto .subtemas-lista {
+        display: block;
+    }
+    .subtema-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 3px 0;
+    font-size: .93rem;
+    color: var(--color-text);
+    border-bottom: 1px solid #F8FAFC;
+}
+    .subtema-item:last-child { border-bottom: none; }
+    .subtema-dot {
+        width: 5px; height: 5px; border-radius: 50%;
+        background: var(--color-primary-light);
+        flex-shrink: 0;
+        opacity: .55;
+    }
+
     .contexto-proceso {
         background: #EFF6FF; border: 1px solid #BFDBFE;
         border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg);
@@ -105,18 +161,39 @@
             `<strong>${prueba.nombrePrueba} (${prueba.anio ?? '—'})</strong>`;
         ctxEl.classList.remove('hidden');
 
-        // ── Crear nodo colapsable — temas ya incluidos en la respuesta ──
+        // ── Crear nodo colapsable — temas (y subtemas si el BE los envía) ──
         const crearNodoArea = (area) => {
             const nodo = document.createElement('div');
             nodo.className = 'area-nodo';
             nodo.dataset.id = area.idAreaConocimiento;
 
+            // Construye el HTML de un tema; si trae subtemas agrega toggle propio
+            const crearTemaHtml = (t) => {
+                const tieneSubtemas = Array.isArray(t.subtemas) && t.subtemas.length > 0;
+                if (!tieneSubtemas) {
+                    return `<div class="tema-item">
+                                <span class="tema-dot"></span>
+                                <span>${t.nombreTema}</span>
+                            </div>`;
+                }
+                const subtemasHtml = t.subtemas.map(st =>
+                    `<div class="subtema-item">
+                        <span class="subtema-dot"></span>
+                        <span>${st.nombreTema}</span>
+                     </div>`
+                ).join('');
+                return `<div class="tema-item tiene-subtemas" data-tema-id="${t.idTema}">
+                            <div class="tema-cabecera">
+                                <span class="tema-dot"></span>
+                                <span>${t.nombreTema}</span>
+                                <span class="tema-icono-toggle" aria-hidden="true">▶</span>
+                            </div>
+                            <div class="subtemas-lista">${subtemasHtml}</div>
+                        </div>`;
+            };
+
             const temasHtml = area.temas?.length
-                ? area.temas.map(t =>
-                    `<div class="tema-item">
-                        <span class="tema-dot"></span>
-                        <span>${t.nombreTema}</span>
-                    </div>`).join('')
+                ? area.temas.map(crearTemaHtml).join('')
                 : '<p class="sin-temas">Esta área no tiene temas registrados.</p>';
 
             nodo.innerHTML = `
@@ -130,16 +207,24 @@
                 </div>
             `;
 
+            // Toggle del área (nivel 1)
             const cabecera = nodo.querySelector('.area-cabecera');
             const toggle = () => {
                 const abierta = nodo.classList.toggle('abierta');
                 cabecera.classList.toggle('expandida', abierta);
                 cabecera.setAttribute('aria-expanded', String(abierta));
             };
-
             cabecera.addEventListener('click', toggle);
             cabecera.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            });
+
+            // Toggle de temas con subtemas (nivel 2 → nivel 3)
+            nodo.querySelectorAll('.tema-item.tiene-subtemas').forEach(temaEl => {
+                temaEl.querySelector('.tema-cabecera').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    temaEl.classList.toggle('abierto');
+                });
             });
 
             return nodo;
