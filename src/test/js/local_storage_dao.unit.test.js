@@ -1,4 +1,4 @@
-import { expect } from '../lib/chai/index.js';
+import { expect } from './lib/chai/index.js';
 import LocalStorageDao from '../../js/control/local_storage_dao.js';
 
 describe('LocalStorageDao - Pruebas Unitarias', () => {
