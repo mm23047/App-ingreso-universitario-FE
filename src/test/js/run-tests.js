@@ -13,13 +13,15 @@ async function inicializarPruebas() {
         await import('./inscripciones_dao.unit.test.js');
         await import('./preguntas_dao.unit.test.js');
 
-        // DAOs — recursos de contexto (prueba activa, etapa, carreras elegidas)
+        // DAOs — recursos de contexto (prueba activa, etapa, carreras elegidas, árbol de áreas)
         await import('./pruebas_admision_dao.unit.test.js');
         await import('./etapas_dao.unit.test.js');
         await import('./carreras_elegida_dao.unit.test.js');
+        await import('./areas_dao.unit.test.js');
 
         // Controllers
         await import('./turnos_controller.unit.test.js');
+        await import('./aspirantes_controller.unit.test.js');
 
         // Infraestructura
         await import('./local_storage_dao.unit.test.js');
