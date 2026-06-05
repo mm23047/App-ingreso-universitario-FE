@@ -157,47 +157,50 @@ describe('AspirantesController - Pruebas Unitarias', () => {
 
         it('debe llamar al DAO exactamente una vez', async () => {
             const mockAspirante = new Aspirante('uuid-1', 'Juan', 'Pérez', '2000-05-15', '01234567-8', 'juan@mail.com', '2026-06-04', false);
-            const stub = sinon.stub(controller.aspirantesDao, 'crear').resolves(mockAspirante);
+            let callCount = 0;
+            controller.aspirantesDao.crear = () => { callCount++; return Promise.resolve(mockAspirante); };
 
             await controller.registrar(datosValidos);
 
-            expect(stub.calledOnce).to.be.true;
+            expect(callCount).to.equal(1);
         });
 
         it('debe completar con usaSillaRuedas:false cuando el campo está ausente', async () => {
             const mockAspirante = new Aspirante('uuid-1', 'Juan', 'Pérez', '2000-05-15', '01234567-8', 'juan@mail.com', '2026-06-04', false);
-            const stub = sinon.stub(controller.aspirantesDao, 'crear').resolves(mockAspirante);
+            let capturedArg;
+            controller.aspirantesDao.crear = (datos) => { capturedArg = datos; return Promise.resolve(mockAspirante); };
             const datos = { ...datosValidos };
             delete datos.usaSillaRuedas;
 
             await controller.registrar(datos);
 
-            const argEnviado = stub.firstCall.args[0];
-            expect(argEnviado.usaSillaRuedas).to.equal(false);
+            expect(capturedArg.usaSillaRuedas).to.equal(false);
         });
     });
 
     describe('registrar — validación local impide llamar al DAO', () => {
         it('debe lanzar error y NO llamar al DAO si el DUI tiene formato incorrecto', async () => {
-            const stub = sinon.stub(controller.aspirantesDao, 'crear').resolves({});
+            let wasCalled = false;
+            controller.aspirantesDao.crear = () => { wasCalled = true; return Promise.resolve({}); };
 
             try {
                 await controller.registrar({ ...datosValidos, dui: 'INVALIDO' });
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
-                expect(stub.called).to.be.false;
+                expect(wasCalled).to.be.false;
                 expect(error).to.be.instanceOf(Error);
             }
         });
 
         it('debe lanzar error y NO llamar al DAO si el correo no es válido', async () => {
-            const stub = sinon.stub(controller.aspirantesDao, 'crear').resolves({});
+            let wasCalled = false;
+            controller.aspirantesDao.crear = () => { wasCalled = true; return Promise.resolve({}); };
 
             try {
                 await controller.registrar({ ...datosValidos, correo: 'no-es-correo' });
                 expect.fail();
             } catch (error) {
-                expect(stub.called).to.be.false;
+                expect(wasCalled).to.be.false;
             }
         });
     });

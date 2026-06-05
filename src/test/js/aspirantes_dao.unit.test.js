@@ -202,4 +202,125 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
             expect(aspirantesDao.obtenerPorId).to.exist;
         });
     });
+
+    describe('crearInscripcion con Stub', () => {
+        const ASPIRANTE_ID = 'uuid-aspirante-1';
+        const PRUEBA_ID    = 'uuid-prueba-1';
+
+        const mockInscripcionResponse = {
+            idInscripcionPrueba: 'uuid-insc-1',
+            aspiranteDato:       { id: ASPIRANTE_ID, nombres: 'Juan' },
+            pruebaAdmision:      { idPruebaAdmision: PRUEBA_ID },
+            estado:              'INSCRITO'
+        };
+
+        it('debe usar método POST', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 201, json: () => Promise.resolve(mockInscripcionResponse) }); };
+
+            await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            expect(capturedOpts.method).to.equal('POST');
+        });
+
+        it('URL debe incluir aspirantes/{aspiranteId}/inscripciones', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 201, json: () => Promise.resolve(mockInscripcionResponse) }); };
+
+            await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            expect(capturedUrl).to.include(`aspirantes/${ASPIRANTE_ID}/inscripciones`);
+        });
+
+        it('body debe contener pruebaAdmision.idPruebaAdmision — no el UUID directo', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 201, json: () => Promise.resolve(mockInscripcionResponse) }); };
+
+            await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            const body = JSON.parse(capturedOpts.body);
+            expect(body).to.have.property('pruebaAdmision');
+            expect(body.pruebaAdmision).to.have.property('idPruebaAdmision', PRUEBA_ID);
+            expect(body).to.not.have.property('pruebaAdmisionId');
+        });
+
+        it('debe retornar una instancia de InscripcionPrueba', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 201,
+                json: () => Promise.resolve(mockInscripcionResponse)
+            });
+
+            const resultado = await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            // InscripcionPrueba usa idInscripcionPrueba como PK, no id
+            expect(resultado.idInscripcionPrueba).to.equal('uuid-insc-1');
+        });
+
+        it('debe mapear aspiranteDato y pruebaAdmision correctamente', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 201,
+                json: () => Promise.resolve(mockInscripcionResponse)
+            });
+
+            const resultado = await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            expect(resultado.aspiranteDato.id).to.equal(ASPIRANTE_ID);
+            expect(resultado.pruebaAdmision.idPruebaAdmision).to.equal(PRUEBA_ID);
+        });
+
+        it('debe usar estado "INSCRITO" como default si el backend no lo devuelve', async () => {
+            const sinEstado = { idInscripcionPrueba: 'uuid-insc-1', aspiranteDato: null, pruebaAdmision: null };
+            sinon.stub(window, 'fetch').resolves({
+                status: 201,
+                json: () => Promise.resolve(sinEstado)
+            });
+
+            const resultado = await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+
+            expect(resultado.estado).to.equal('INSCRITO');
+        });
+
+        it('debe lanzar error si aspiranteId no se proporciona', async () => {
+            try {
+                await aspirantesDao.crearInscripcion(null, PRUEBA_ID);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error si pruebaAdmisionId no se proporciona', async () => {
+            try {
+                await aspirantesDao.crearInscripcion(ASPIRANTE_ID, null);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error cuando el servidor responde 409 (ya inscrito)', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 409 });
+
+            try {
+                await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+            }
+        });
+
+        it('debe lanzar error cuando el servidor responde 400', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 400 });
+
+            try {
+                await aspirantesDao.crearInscripcion(ASPIRANTE_ID, PRUEBA_ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+            }
+        });
+    });
 });

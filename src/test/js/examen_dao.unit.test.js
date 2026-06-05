@@ -46,11 +46,13 @@ describe('ExamenRealizadoDao - Pruebas Unitarias', () => {
         });
 
         it('debe enviar body con idInscripcion e idEtapa', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 201, json: () => Promise.resolve({}) }); };
 
             await dao.iniciarExamen('uuid-inscripcion-1', 'uuid-etapa-1');
 
-            const body = JSON.parse(window.fetch.firstCall.args[1].body);
+            const body = JSON.parse(capturedOpts.body);
             expect(body.idInscripcion).to.equal('uuid-inscripcion-1');
             expect(body.idEtapa).to.equal('uuid-etapa-1');
         });
@@ -146,11 +148,13 @@ describe('RespuestaExamenDao - Pruebas Unitarias', () => {
 
     describe('enviarRespuesta con Stub', () => {
         it('debe enviar body con examenRealizado y preguntaOpcion', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve({}) });
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 201, json: () => Promise.resolve({}) }); };
 
             await dao.enviarRespuesta('uuid-examen-1', 'uuid-opcion-1');
 
-            const body = JSON.parse(window.fetch.firstCall.args[1].body);
+            const body = JSON.parse(capturedOpts.body);
             expect(body.examenRealizado.idExamenRealizado).to.equal('uuid-examen-1');
             expect(body.preguntaOpcion.idPreguntaOpcion).to.equal('uuid-opcion-1');
         });
@@ -175,11 +179,13 @@ describe('RespuestaExamenDao - Pruebas Unitarias', () => {
 
     describe('enviarLote con Stub', () => {
         it('debe enviar body con idExamen y opcionesSeleccionadas', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 201, json: () => Promise.resolve('ok') });
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 201, json: () => Promise.resolve('ok') }); };
 
             await dao.enviarLote('uuid-examen-1', ['uuid-o1', 'uuid-o2']);
 
-            const body = JSON.parse(window.fetch.firstCall.args[1].body);
+            const body = JSON.parse(capturedOpts.body);
             expect(body.idExamen).to.equal('uuid-examen-1');
             expect(body.opcionesSeleccionadas).to.deep.equal(['uuid-o1', 'uuid-o2']);
         });

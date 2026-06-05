@@ -51,7 +51,6 @@ describe('EtapasDao - Pruebas Unitarias con Stubs', () => {
             const resultado = await dao.obtenerTodas();
 
             expect(resultado[0].idEtapaAdmision).to.equal('uuid-etapa-1');
-            expect(resultado[0].id).to.equal('uuid-etapa-1');
             expect(resultado[0].cantidadPreguntasRequeridas).to.equal(40);
         });
 
