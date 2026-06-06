@@ -18,7 +18,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Mocha Test",
-            "url": "http://localhost:3000/",
+            "url": "http://localhost:3000/src/test/js/all_tests.html",
             "webRoot": "${workspaceFolder}/src",
             "runtimeExecutable": "C:\\Users\\estua\\AppData\\Local\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
             "preLaunchTask": "lanzarMocha",

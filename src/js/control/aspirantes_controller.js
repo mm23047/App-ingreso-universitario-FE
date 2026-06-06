@@ -41,15 +41,8 @@ class AspirantesController {
             return aspirante;
         } catch (error) {
             console.error('Error al registrar aspirante:', error);
-            let msg;
-            if (error.message.includes('409')) {
-                const partes = error.message.split(' - ');
-                msg = partes.length > 1
-                    ? partes.slice(1).join(' - ').trim()
-                    : 'Ya existe un registro con ese DUI o correo';
-            } else {
-                msg = `Error al registrar: ${error.message}`;
-            }
+            // Si el backend devolvió un ErrorNegocioDTO estructurado, usar su mensaje directo
+            const msg = error.mensajeNegocio ?? `Error al registrar: ${error.message}`;
             document.querySelector('app-toast')?.show(msg, 5000, 'error');
             throw error;
         } finally {

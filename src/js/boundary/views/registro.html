@@ -151,12 +151,19 @@
 <!-- ── Panel: DUI/correo duplicado ── -->
 <div id="panel-duplicado" class="alerta-duplicado hidden">
     <h3>⚠ Ya existe una cuenta asociada a estos datos</h3>
-    <p>
+    <p style="margin-bottom:var(--space-md);">
         Los datos ingresados (DUI o correo) ya están registrados en el sistema.<br>
-        Si ya tienes una cuenta, puedes <a href="#/resultado" style="color:#92400E;text-decoration:underline;">
-        consultar el estado de tu proceso</a> directamente.<br>
-        Si crees que es un error, contacta a la administración del proceso de ingreso.
+        Si ya tienes una cuenta, puedes recuperar el acceso para consultar o continuar tu proceso de admisión.
     </p>
+    <div style="display:flex; flex-direction:column; gap:var(--space-sm); align-items:flex-start;">
+        <button id="btn-recuperar-cuenta" class="btn"
+                style="background:#D97706; color:white; border:1.5px solid #B45309; font-weight:600;">
+            Recuperar acceso a mi cuenta →
+        </button>
+        <p style="margin:0; font-size:.85rem; color:#78350F;">
+            Si crees que es un error, contacta a la administración del proceso de ingreso.
+        </p>
+    </div>
 </div>
 
 <!-- ── Panel: Confirmación de éxito ── -->
@@ -170,7 +177,7 @@
     <div id="aviso-sin-proceso" class="hidden"
          style="background:#FEF3C7;border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);">
         <p style="margin:0;color:#78350F;font-size:.9rem;">
-            ⚠ No hay proceso de admisión activo actualmente.
+            No hay proceso de admisión activo actualmente.
             Tu perfil fue creado, pero las carreras de interés no pudieron registrarse todavía.
             Vuelve cuando haya un proceso activo para completar tu selección.
         </p>
@@ -229,6 +236,11 @@
 
     // ── Envío del formulario ──
     btnRegistrar.addEventListener('click', async () => {
+        // Resetear estado visual de intentos previos antes de cada nueva solicitud
+        panelDuplicado.classList.add('hidden');
+        secDatos.classList.remove('hidden');
+        secCarreras.classList.remove('hidden');
+
         const form = document.getElementById('form-datos');
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -245,7 +257,7 @@
         btnRegistrar.disabled = true;
         btnRegistrar.textContent = 'Registrando...';
 
-        // Paso 1: Crear aspirante. Si hay 409 = DUI/correo duplicado → panel de duplicado.
+        // Paso 1: Crear aspirante
         const datos = {
             nombres:         document.getElementById('nombres').value.trim(),
             apellidos:       document.getElementById('apellidos').value.trim(),
@@ -259,11 +271,15 @@
         } catch (errorRegistro) {
             btnRegistrar.disabled = false;
             btnRegistrar.textContent = 'Registrar y continuar →';
-            if (errorRegistro.message.includes('409')) {
+            // Solo mostrar el panel de duplicado cuando el backend confirma un conflicto real
+            const esDuplicado = errorRegistro.tipo === 'DUI_DUPLICADO'
+                             || errorRegistro.tipo === 'CORREO_DUPLICADO';
+            if (esDuplicado) {
                 secDatos.classList.add('hidden');
                 secCarreras.classList.add('hidden');
                 panelDuplicado.classList.remove('hidden');
             }
+            // Para EDAD_MINIMA u otros errores el formulario queda visible para corregir
             return;
         }
 
@@ -309,5 +325,13 @@
         panelDuplicado.classList.add('hidden');
         secDatos.classList.remove('hidden');
         secCarreras.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-recuperar-cuenta').addEventListener('click', () => {
+        document.querySelector('app-toast')?.show(
+            'La recuperación de cuenta no está disponible en este momento. ' +
+            'Contacta a la administración del proceso de ingreso para recibir asistencia.',
+            7000, 'warning'
+        );
     });
 </script>

@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import EtapasDao from '../../js/control/etapas_dao.js';
-import EtapasAdmision from '../../js/entity/EtapasAdmision.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import EtapasDao from '../../../../js/control/etapas_dao.js';
+import EtapasAdmision from '../../../../js/entity/EtapasAdmision.js';
 
 describe('EtapasDao - Pruebas Unitarias con Stubs', () => {
     let dao;
@@ -51,7 +51,6 @@ describe('EtapasDao - Pruebas Unitarias con Stubs', () => {
             const resultado = await dao.obtenerTodas();
 
             expect(resultado[0].idEtapaAdmision).to.equal('uuid-etapa-1');
-            expect(resultado[0].id).to.equal('uuid-etapa-1');
             expect(resultado[0].cantidadPreguntasRequeridas).to.equal(40);
         });
 

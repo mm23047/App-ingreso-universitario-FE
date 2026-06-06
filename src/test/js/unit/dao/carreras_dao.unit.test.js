@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import CarrerasDao from '../../js/control/carreras_dao.js';
-import Carrera from '../../js/entity/Carrera.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import CarrerasDao from '../../../../js/control/carreras_dao.js';
+import Carrera from '../../../../js/entity/Carrera.js';
 
 describe('CarrerasDao - Pruebas Unitarias con Stubs', () => {
     let carrerasDao;
