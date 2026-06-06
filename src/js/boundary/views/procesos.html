@@ -1,159 +1,923 @@
 <!-- ============================================================
      VISTA: PROCESOS DE INGRESO  (#/procesos)
-     Fragmento inyectado por el router en <main id="app-content">.
-     Controller: PruebasAdmisionController  →  GET /pruebas_admision?first=0&max=50[&buscar=texto]
-     Campos BE:  idPruebaAdmision (UUID), nombrePrueba (String), anio (Integer), activa (Boolean)
-     Orden:      cronológico descendente desde backend (anio DESC, nombrePrueba ASC)
-     Filtro:     backend — ?buscar= filtra por nombre (LIKE) o año (exacto)
+
+     Fuentes de datos — sin modificar backend:
+     ┌─────────────────────────────────────────────────────────────┐
+     │ 1. GET /v1/pruebas_admision?first=0&max=200                 │
+     │    → [{ idPruebaAdmision, nombrePrueba, anio, activa }]     │
+     │                                                             │
+     │ 2. GET /v1/turnos                                           │
+     │    → [{ idTurnoExamen, nombreTurno, fecha,                  │
+     │         horaInicio, horaFin,                                │
+     │         pruebaAdmision: { idPruebaAdmision } }]             │
+     │                                                             │
+     │ 3. GET /v1/aulas_turnos/disponibilidad                      │
+     │    → [{ idDisponibilidadAulaTurno: { idAula, idTurno },     │
+     │         aula: { codigoAulaApi, ... },                       │
+     │         turnoExamen: { idTurnoExamen, ... } }]              │
+     └─────────────────────────────────────────────────────────────┘
+
+     Join cliente:
+       prueba → turnos  (por turno.pruebaAdmision.idPruebaAdmision)
+       turno  → sedes   (por disponibilidad.turnoExamen.idTurnoExamen)
+
+     Objeto ensamblado final:
+     {
+       idPruebaAdmision, nombrePrueba, anio, activa,
+       fechaInicio: string|null,   // min(turno.fecha)
+       fechaFin:    string|null,   // max(turno.fecha)
+       jornadas:    string[],      // nombreTurno únicos
+       horarios:    string[],      // "HH:MM – HH:MM" únicos
+       sedes:       string[]       // codigoAulaApi únicos
+     }
+
+     Campos sin endpoint disponible (ocultos):
+       - Tipo de prueba     (no existe en ninguno de los 3 endpoints)
+       - Descripción        (PruebaAdmision no tiene campo descripción)
+       - Cupos disponibles  (requiere GET /cupos — fuera de alcance)
      ============================================================ -->
 
 <style>
-    .proceso-card {
+    /* ── Buscador ── */
+    .ps-buscador-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 220px;
+        max-width: 520px;
+    }
+    .ps-buscador-icon {
+        position: absolute;
+        left: .875rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-text-muted);
+        pointer-events: none;
+        display: flex;
+    }
+    .ps-buscador {
+        width: 100%;
+        padding: .625rem 1rem .625rem 2.6rem;
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-size: .95rem;
+        background: var(--color-surface);
+        color: var(--color-text);
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .ps-buscador:focus {
+        outline: none;
+        border-color: var(--color-primary-light);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .ps-contador {
+        font-size: .85rem;
+        color: var(--color-text-muted);
+        white-space: nowrap;
+    }
+    .ps-contador strong { color: var(--color-text); font-weight: 600; }
+
+    /* ── Grid de tarjetas ── */
+    .ps-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-lg);
+    }
+    @media (max-width: 860px) { .ps-grid { grid-template-columns: 1fr; } }
+
+    /* ── Tarjeta ── */
+    .ps-card {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
-        padding: var(--space-xl);
         box-shadow: var(--shadow-sm);
-        transition: box-shadow var(--transition);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow var(--transition), transform var(--transition);
     }
-    .proceso-card:hover { box-shadow: var(--shadow-md); }
-    .badge-activo   { display:inline-block; background:#D1FAE5; color:#065F46;
-                      font-size:.75rem; font-weight:700; padding:2px 10px;
-                      border-radius:var(--radius-full); }
-    .badge-inactivo { display:inline-block; background:#F3F4F6; color:var(--color-text-muted);
-                      font-size:.75rem; font-weight:700; padding:2px 10px;
-                      border-radius:var(--radius-full); }
-    .proceso-meta   { display:grid; grid-template-columns:max-content 1fr;
-                      gap:var(--space-xs) var(--space-lg); margin-top:var(--space-md);
-                      font-size:.92rem; }
-    .proceso-meta dt { color:var(--color-text-muted); }
-    .proceso-meta dd { font-weight:500; margin:0; }
-    .buscador {
-        width:100%; padding:var(--space-sm) var(--space-md);
-        border:1px solid var(--color-border); border-radius:var(--radius-md);
-        font-size:1rem; background:var(--color-surface);
+    .ps-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
     }
-    .buscador:focus { outline:none; border-color:var(--color-primary);
-                      box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-    .sin-resultados { text-align:center; padding:var(--space-2xl) 0; color:var(--color-text-muted); }
+
+    /* ── Cabecera de tarjeta ── */
+    .ps-card-head {
+        background: linear-gradient(135deg, #1e2e5c 0%, #1E3A8A 65%, #2563EB 100%);
+        padding: var(--space-md) var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+    .ps-card-head-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+    .ps-badge-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .68rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: var(--radius-full);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    .ps-badge-estado.activo {
+        background: rgba(16,185,129,.25);
+        color: #6EE7B7;
+        border: 1px solid rgba(16,185,129,.35);
+    }
+    .ps-badge-estado.inactivo {
+        background: rgba(255,255,255,.1);
+        color: rgba(255,255,255,.55);
+        border: 1px solid rgba(255,255,255,.18);
+    }
+    .ps-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+    }
+    .ps-anio-tag {
+        color: rgba(255,255,255,.65);
+        font-size: .78rem;
+        font-weight: 600;
+        background: rgba(255,255,255,.12);
+        padding: 2px 9px;
+        border-radius: var(--radius-full);
+    }
+    .ps-nombre {
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    /* ── Cuerpo de tarjeta ── */
+    .ps-card-body {
+        padding: var(--space-lg);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+    .ps-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md) var(--space-lg);
+    }
+    .ps-campo { display: flex; flex-direction: column; gap: 3px; }
+    .ps-campo.full { grid-column: 1 / -1; }
+    .ps-campo-label {
+        font-size: .7rem;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .ps-campo-val {
+        font-size: .9rem;
+        font-weight: 500;
+        color: var(--color-text);
+    }
+    .ps-campo-val.vacio {
+        font-style: italic;
+        font-weight: 400;
+        color: var(--color-text-muted);
+    }
+
+    /* ── Chips de sedes ── */
+    .ps-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 3px;
+    }
+    .ps-chip {
+        font-size: .77rem;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: var(--radius-full);
+    }
+    .ps-chip-sede {
+        background: #EFF6FF;
+        color: var(--color-primary);
+        border: 1px solid #BFDBFE;
+    }
+    .ps-chip-empty {
+        background: var(--color-bg);
+        color: var(--color-text-muted);
+        border: 1px solid var(--color-border);
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    /* ── Botón CTA ── */
+    .ps-card-foot { padding: 0 var(--space-lg) var(--space-lg); }
+    .ps-btn-consultar {
+        width: 100%;
+        padding: .6rem var(--space-md);
+        background: var(--color-primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: .92rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-sm);
+        transition: background var(--transition), transform var(--transition);
+    }
+    .ps-btn-consultar:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-1px);
+    }
+    .ps-btn-consultar:active { transform: none; }
+
+    /* ── Skeleton loader ── */
+    .ps-skeleton-rect {
+        border-radius: 4px;
+        background: linear-gradient(90deg, #E9EEF4 25%, #D4DCE8 50%, #E9EEF4 75%);
+        background-size: 200% 100%;
+        animation: ps-shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes ps-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* ── Estados vacíos / error ── */
+    .ps-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: var(--space-2xl) var(--space-xl);
+        color: var(--color-text-muted);
+    }
+    .ps-empty-icon { font-size: 2.5rem; opacity: .35; margin-bottom: var(--space-md); }
+
+    .ps-banner-parcial {
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-lg);
+        font-size: .85rem;
+        color: #92400E;
+        margin-bottom: var(--space-lg);
+        display: none;
+    }
+
+    /* ── Filtros por año ── */
+    .ps-filtros-wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+        margin-bottom: var(--space-lg);
+    }
+    .ps-filtros-label {
+        font-size: .78rem;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-right: var(--space-xs);
+    }
+    .ps-filtro-btn {
+        padding: 4px 14px;
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-full);
+        background: var(--color-surface);
+        color: var(--color-text-muted);
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color var(--transition), color var(--transition),
+                    background var(--transition);
+    }
+    .ps-filtro-btn:hover {
+        border-color: var(--color-primary-light);
+        color: var(--color-primary);
+        background: #EFF6FF;
+    }
+    .ps-filtro-btn.activo {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #fff;
+    }
+
+    /* ── Timeline cronológica ── */
+    .ps-tl-root {
+        position: relative;
+    }
+    /* línea vertical continua */
+    .ps-tl-linea {
+        position: absolute;
+        left: 27px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: linear-gradient(
+            to bottom,
+            var(--color-primary)  0%,
+            #93C5FD               70%,
+            transparent          100%
+        );
+        pointer-events: none;
+        border-radius: 1px;
+    }
+    /* grupo de un año */
+    .ps-tl-grupo {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-lg);
+        margin-bottom: var(--space-2xl);
+        position: relative;
+    }
+    /* pastilla-nodo del año */
+    .ps-tl-nodo {
+        flex-shrink: 0;
+        width: 56px;
+        min-height: 36px;
+        background: var(--color-primary);
+        color: #fff;
+        border-radius: var(--radius-sm);
+        padding: 5px 2px;
+        text-align: center;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        line-height: 1.25;
+        box-shadow: 0 0 0 3px #EFF6FF, var(--shadow-sm);
+        position: relative;
+        z-index: 1;
+        cursor: default;
+    }
+    /* conector horizontal nodo → contenido */
+    .ps-tl-nodo::after {
+        content: '';
+        position: absolute;
+        right: -14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 14px;
+        height: 2px;
+        background: var(--color-primary-light);
+    }
+    /* columna de contenido del grupo */
+    .ps-tl-contenido {
+        flex: 1;
+        min-width: 0;
+    }
+    /* título del año dentro del grupo */
+    .ps-tl-anio-titulo {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        font-size: .78rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: var(--space-md);
+    }
+    .ps-tl-anio-titulo::after {
+        content: '';
+        flex: 1;
+        height: 1.5px;
+        background: #BFDBFE;
+    }
+    /* adaptación mobile */
+    @media (max-width: 680px) {
+        .ps-tl-nodo  { width: 46px; font-size: .66rem; }
+        .ps-tl-grupo { gap: var(--space-md); }
+        .ps-tl-linea { left: 23px; }
+    }
 </style>
 
-<h2 class="mb-md" style="color:var(--color-primary-dark);">Procesos de ingreso</h2>
-<p class="text-muted mb-lg">
-    Lista de todos los procesos de admisión registrados, ordenados del más reciente al más antiguo.
-</p>
+<!-- ── Encabezado ── -->
+<h2 class="mb-xs" style="color:var(--color-primary-dark);">Procesos de ingreso</h2>
 
-<!-- ── Buscador ── -->
-<div class="mb-lg" style="max-width:480px;">
-    <label for="buscador" style="display:block; font-weight:500; margin-bottom:var(--space-xs);">
-        Buscar proceso
-    </label>
-    <input type="search" id="buscador" class="buscador"
-           placeholder="Nombre del proceso o año…" autocomplete="off">
+<!-- ── Banner de datos parciales ── -->
+<div id="ps-banner" class="ps-banner-parcial" role="status"></div>
+
+<!-- ── Barra de búsqueda + contador ── -->
+<div style="display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap; margin-bottom:var(--space-lg);">
+    <div class="ps-buscador-wrap">
+        <span class="ps-buscador-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+        </span>
+        <input type="search" id="ps-buscador" class="ps-buscador"
+               placeholder="Buscar por nombre del proceso…"
+               autocomplete="off" aria-label="Buscar proceso">
+    </div>
+    <span id="ps-contador" class="ps-contador" aria-live="polite"></span>
 </div>
 
-<!-- ── Lista de procesos ── -->
-<div id="lista-procesos">
-    <p class="text-muted text-center">Cargando procesos de admisión...</p>
-</div>
+<!-- ── Filtros por año (se genera dinámicamente) ── -->
+<div id="ps-filtros-anio" style="display:none;"></div>
+
+<!-- ── Timeline cronológica (se genera dinámicamente) ── -->
+<div id="ps-grid"></div>
 
 <script type="module">
-    // Rutas relativas al documento base index.html
-    import PruebasAdmisionController from './js/control/pruebas_admision_controller.js';
-    import { store } from './js/infra/app_state.js';
+    import DefaultDao   from './js/control/default_dao.js';
+    import { store }    from './js/infra/app_state.js';
     import { navigate } from './js/infra/router.js';
 
-    const ctrl     = new PruebasAdmisionController();
-    const lista    = document.getElementById('lista-procesos');
-    const buscador = document.getElementById('buscador');
+    const BASE     = new DefaultDao().getBaseUrl();
+    const grid     = document.getElementById('ps-grid');
+    const buscador = document.getElementById('ps-buscador');
+    const contador = document.getElementById('ps-contador');
+    const banner   = document.getElementById('ps-banner');
 
-    const renderPrueba = (p) => {
-        const badge = p.activa
-            ? '<span class="badge-activo">Activo</span>'
-            : '<span class="badge-inactivo">Inactivo</span>';
-        return `
-            <div class="proceso-card mb-md">
-                ${badge}
-                <h3 style="color:var(--color-primary-dark); margin:var(--space-xs) 0;">
-                    ${p.nombrePrueba}
-                </h3>
-                <dl class="proceso-meta">
-                    <dt>Año</dt>
-                    <dd>${p.anio ?? '—'}</dd>
-                    <dt>ID del proceso</dt>
-                    <dd style="font-size:.8rem; color:var(--color-text-muted);">${p.idPruebaAdmision}</dd>
-                </dl>
-                <div class="mt-md" style="display:flex; gap:var(--space-md); flex-wrap:wrap;">
-                    <button class="btn btn-outline btn-ver-areas"
-                            style="font-size:.9rem;"
-                            data-id="${p.idPruebaAdmision}"
-                            data-nombre="${p.nombrePrueba}"
-                            data-anio="${p.anio}"
-                            data-activa="${p.activa}">
-                        Ver áreas de conocimiento →
-                    </button>
-                </div>
-            </div>
-        `;
-    };
+    let _todos        = [];   // cache completo de procesos ensamblados (carga inicial)
+    let _anioActivo   = null; // null = mostrar todos los años
+    let _turnosBrutos    = [];   // turnos crudos para reensamblaje tras búsqueda backend
+    let _dispsBrutos     = [];   // disponibilidades crudas para reensamblaje
+    let _abortController = null; // cancela peticiones en vuelo al llegar una nueva
 
-    const renderLista = (pruebas) => {
-        if (!pruebas.length) {
-            lista.innerHTML = '<div class="sin-resultados">No se encontraron procesos.</div>';
+    /* ══════════════════════════════════════════════════
+       CARGA — 3 endpoints en paralelo con degradación
+    ══════════════════════════════════════════════════ */
+    async function cargarDatos() {
+        mostrarSkeleton();
+
+        const [resPruebas, resTurnos, resDisp] = await Promise.allSettled([
+            fetch(`${BASE}pruebas_admision?first=0&max=200`)
+                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
+            fetch(`${BASE}turnos`)
+                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
+            fetch(`${BASE}aulas_turnos/disponibilidad`)
+                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
+        ]);
+
+        // Procesos es obligatorio — sin él no hay nada que mostrar
+        if (resPruebas.status === 'rejected') {
+            mostrarError('No se pudieron cargar los procesos. Verifica que el servidor esté encendido en el puerto 9080.');
             return;
         }
-        lista.innerHTML = pruebas.map(renderPrueba).join('');
 
-        // Botones "Ver áreas": guardan la prueba en store y navegan
-        lista.querySelectorAll('.btn-ver-areas').forEach(btn => {
-            btn.addEventListener('click', () => {
-                store.prueba = {
-                    idPruebaAdmision: btn.dataset.id,
-                    nombrePrueba:     btn.dataset.nombre,
-                    anio:             Number(btn.dataset.anio),
-                    activa:           btn.dataset.activa === 'true',
-                };
-                navigate('/areas');
-            });
-        });
-    };
-
-    const renderError = (err) => {
-        const esCaida = err instanceof TypeError && err.message.includes('fetch');
-        lista.innerHTML = esCaida
-            ? '<p class="text-danger text-center">⚠ Backend no disponible.</p>'
-            : `<p class="text-danger text-center">Error al cargar procesos: ${err.message}</p>`;
-    };
-
-    // Contador de petición: descarta respuestas obsoletas (evita race condition)
-    let _peticionActual = 0;
-    const cargar = (buscar = '', esInicial = false) => {
-        const peticion = ++_peticionActual;
-        if (esInicial) {
-            lista.innerHTML = '<p class="text-muted text-center">Cargando procesos de admisión...</p>';
-        } else {
-            lista.style.opacity = '0.5';
+        // Turnos y disponibilidad son enriquecimiento — degradan con aviso
+        const avisos = [];
+        if (resTurnos.status === 'rejected') avisos.push('fechas y horarios (turnos no disponibles)');
+        if (resDisp.status   === 'rejected') avisos.push('sedes (disponibilidad de aulas no disponible)');
+        if (avisos.length) {
+            banner.style.display = 'block';
+            banner.textContent = `⚠ Datos incompletos: no se pudieron cargar ${avisos.join(' y ')}.`;
         }
-        ctrl.cargarTodas(0, 50, buscar, !esInicial)
-            .then(pruebas => {
-                if (peticion !== _peticionActual) return;
-                lista.style.opacity = '';
-                renderLista(pruebas);
-            })
-            .catch(err => {
-                if (peticion !== _peticionActual) return;
-                lista.style.opacity = '';
-                renderError(err);
-            });
-    };
 
-    // ── Carga inicial — el backend ya devuelve el orden correcto ──
-    cargar('', true);
+        const pruebas = resPruebas.value ?? [];
+        const turnos  = resTurnos.status === 'fulfilled' ? (resTurnos.value ?? []) : [];
+        const disps   = resDisp.status   === 'fulfilled' ? (resDisp.value   ?? []) : [];
 
-    // ── Filtro por texto — debounce 300ms, delega al backend ──
+        _turnosBrutos = turnos;
+        _dispsBrutos  = disps;
+        _todos = ensamblar(pruebas, turnos, disps);
+        generarFiltrosAnio(_todos);
+        renderizar(_todos);
+    }
+
+    /* ══════════════════════════════════════════════════
+       ENSAMBLAJE — join cliente por IDs
+    ══════════════════════════════════════════════════ */
+    function ensamblar(pruebas, turnos, disps) {
+        // Índice: idPruebaAdmision → turnos[]
+        const turnosPorPrueba = {};
+        for (const t of turnos) {
+            const pid = t.pruebaAdmision?.idPruebaAdmision;
+            if (pid) (turnosPorPrueba[pid] ??= []).push(t);
+        }
+
+        // Índice: idTurnoExamen → Set<codigoAulaApi>
+        const sedesPorTurno = {};
+        for (const d of disps) {
+            const tid  = d.turnoExamen?.idTurnoExamen
+                      ?? d.idDisponibilidadAulaTurno?.idTurno;
+            const sede = d.aula?.codigoAulaApi;
+            if (tid && sede) (sedesPorTurno[tid] ??= new Set()).add(sede);
+        }
+
+        return pruebas.map(p => {
+            const turnosP = turnosPorPrueba[p.idPruebaAdmision] ?? [];
+
+            // Fechas ordenadas → inicio = primera, fin = última
+            const fechas = turnosP.map(t => t.fecha).filter(Boolean).sort();
+
+            // Jornadas únicas (nombreTurno)
+            const jornadas = [...new Set(turnosP.map(t => t.nombreTurno).filter(Boolean))];
+
+            // Horarios únicos "HH:MM – HH:MM"
+            const horarios = [...new Set(
+                turnosP
+                    .filter(t => t.horaInicio && t.horaFin)
+                    .map(t => `${t.horaInicio.slice(0,5)} – ${t.horaFin.slice(0,5)}`)
+            )];
+
+            // Sedes únicas de todos los turnos de este proceso
+            const sedes = new Set();
+            turnosP.forEach(t =>
+                (sedesPorTurno[t.idTurnoExamen] ?? new Set()).forEach(s => sedes.add(s))
+            );
+
+            return {
+                idPruebaAdmision: p.idPruebaAdmision,
+                nombrePrueba:     p.nombrePrueba ?? '—',
+                anio:             p.anio         ?? '—',
+                activa:           !!p.activa,
+                fechaInicio:      fechas[0]              ?? null,
+                fechaFin:         fechas.at(-1)          ?? null,
+                jornadas,
+                horarios,
+                sedes: [...sedes],
+            };
+        });
+    }
+
+    /* ══════════════════════════════════════════════════
+       RENDER
+    ══════════════════════════════════════════════════ */
+    function renderizar(lista) {
+        actualizarContador(lista.length);
+
+        if (!lista.length) {
+            grid.innerHTML = `
+                <div class="ps-empty" style="text-align:center; padding:var(--space-2xl);">
+                    <div class="ps-empty-icon">📋</div>
+                    <p style="font-size:1rem; font-weight:500;">No se encontraron procesos.</p>
+                    <p style="font-size:.88rem; margin-top:4px;">
+                        Intenta con otro término de búsqueda o cambia el filtro de año.
+                    </p>
+                </div>`;
+            return;
+        }
+
+        // Agrupar por año (desc) y construir timeline
+        const grupos = agruparPorAnio(lista);
+
+        // Wrapper con línea vertical
+        const root = document.createElement('div');
+        root.className = 'ps-tl-root';
+
+        const linea = document.createElement('div');
+        linea.className = 'ps-tl-linea';
+        linea.setAttribute('aria-hidden', 'true');
+        root.appendChild(linea);
+
+        for (const [anio, procesos] of grupos) {
+            const grupo = document.createElement('div');
+            grupo.className = 'ps-tl-grupo';
+
+            // Nodo-año en la línea de tiempo
+            const nodo = document.createElement('div');
+            nodo.className = 'ps-tl-nodo';
+            nodo.setAttribute('aria-hidden', 'true');
+            nodo.textContent = anio;
+
+            // Columna de contenido
+            const contenido = document.createElement('div');
+            contenido.className = 'ps-tl-contenido';
+
+            // Título del grupo (AÑO ACADÉMICO · N procesos)
+            const titulo = document.createElement('div');
+            titulo.className = 'ps-tl-anio-titulo';
+            titulo.textContent = `Año académico ${anio} · ${procesos.length} proceso${procesos.length !== 1 ? 's' : ''}`;
+            contenido.appendChild(titulo);
+
+            // Sub-grid de tarjetas
+            const subGrid = document.createElement('div');
+            subGrid.className = 'ps-grid';
+            subGrid.setAttribute('role', 'list');
+            procesos.forEach(p => subGrid.appendChild(crearTarjeta(p)));
+            contenido.appendChild(subGrid);
+
+            grupo.appendChild(nodo);
+            grupo.appendChild(contenido);
+            root.appendChild(grupo);
+        }
+
+        grid.innerHTML = '';
+        grid.appendChild(root);
+    }
+
+    function crearTarjeta(p) {
+        const el = document.createElement('article');
+        el.className = 'ps-card';
+        el.setAttribute('role', 'listitem');
+
+        const sedesHtml = p.sedes.length
+            ? p.sedes.map(s => `<span class="ps-chip ps-chip-sede">${esc(s)}</span>`).join('')
+            : `<span class="ps-chip ps-chip-empty">Sin sedes asignadas</span>`;
+
+        el.innerHTML = `
+            <!-- ── Cabecera (gradiente azul) ── -->
+            <div class="ps-card-head">
+                <div class="ps-card-head-top">
+                    <span class="ps-badge-estado ${p.activa ? 'activo' : 'inactivo'}">
+                        <span class="ps-badge-dot"></span>
+                        ${p.activa ? 'Activo' : 'Inactivo'}
+                    </span>
+                    <span class="ps-anio-tag">${p.anio}</span>
+                </div>
+                <span class="ps-nombre">${esc(p.nombrePrueba)}</span>
+            </div>
+
+            <!-- ── Campos informativos ── -->
+            <div class="ps-card-body">
+                <div class="ps-info-grid">
+
+                    <!-- Fecha inicio -->
+                    <div class="ps-campo">
+                        <span class="ps-campo-label">
+                            ${icoCalendario}
+                            Fecha inicio
+                        </span>
+                        <span class="ps-campo-val ${!p.fechaInicio ? 'vacio' : ''}">
+                            ${p.fechaInicio ? fmtFecha(p.fechaInicio) : 'Sin asignar'}
+                        </span>
+                    </div>
+
+                    <!-- Fecha fin -->
+                    <div class="ps-campo">
+                        <span class="ps-campo-label">
+                            ${icoCalendario}
+                            Fecha fin
+                        </span>
+                        <span class="ps-campo-val ${!p.fechaFin ? 'vacio' : ''}">
+                            ${p.fechaFin ? fmtFecha(p.fechaFin) : 'Sin asignar'}
+                        </span>
+                    </div>
+
+                    <!-- Jornada -->
+                    <div class="ps-campo">
+                        <span class="ps-campo-label">
+                            ${icoSol}
+                            Jornada
+                        </span>
+                        <span class="ps-campo-val ${!p.jornadas.length ? 'vacio' : ''}">
+                            ${p.jornadas.length ? p.jornadas.join(', ') : 'Sin asignar'}
+                        </span>
+                    </div>
+
+                    <!-- Horario -->
+                    <div class="ps-campo">
+                        <span class="ps-campo-label">
+                            ${icoReloj}
+                            Horario
+                        </span>
+                        <span class="ps-campo-val ${!p.horarios.length ? 'vacio' : ''}">
+                            ${p.horarios.length ? p.horarios.join(' / ') : 'Sin asignar'}
+                        </span>
+                    </div>
+
+                    <!-- Sedes (ancho completo) -->
+                    <div class="ps-campo full">
+                        <span class="ps-campo-label">
+                            ${icoPinMap}
+                            Ubicaciones
+                        </span>
+                        <div class="ps-chips">${sedesHtml}</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── CTA ── -->
+            <div class="ps-card-foot">
+                <button class="ps-btn-consultar"
+                        data-id="${p.idPruebaAdmision}"
+                        data-nombre="${esc(p.nombrePrueba)}"
+                        data-anio="${p.anio}"
+                        data-activa="${p.activa}">
+                    Consultar proceso
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>`;
+
+        el.querySelector('.ps-btn-consultar').addEventListener('click', e => {
+            const b = e.currentTarget;
+            store.prueba = {
+                idPruebaAdmision: b.dataset.id,
+                nombrePrueba:     b.dataset.nombre,
+                anio:             Number(b.dataset.anio),
+                activa:           b.dataset.activa === 'true',
+            };
+            navigate('/areas');
+        });
+
+        return el;
+    }
+
+    /* ══════════════════════════════════════════════════
+       FILTRO POR AÑO
+    ══════════════════════════════════════════════════ */
+    const filtrosAnioEl = document.getElementById('ps-filtros-anio');
+
+    function generarFiltrosAnio(todos) {
+        // Años únicos en orden descendente
+        const anios = [...new Set(todos.map(p => p.anio))]
+            .filter(a => a && a !== '—')
+            .sort((a, b) => Number(b) - Number(a));
+
+        if (anios.length <= 1) return; // No vale la pena mostrar filtros con 0 o 1 año
+
+        filtrosAnioEl.style.display = 'block';
+        filtrosAnioEl.innerHTML = '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'ps-filtros-wrap';
+
+        const lbl = document.createElement('span');
+        lbl.className = 'ps-filtros-label';
+        lbl.textContent = 'Año:';
+        wrap.appendChild(lbl);
+
+        // Botón "Todos"
+        const btnTodos = crearBtnFiltro('Todos', null);
+        btnTodos.classList.add('activo');
+        wrap.appendChild(btnTodos);
+
+        // Un botón por cada año
+        anios.forEach(anio => wrap.appendChild(crearBtnFiltro(String(anio), anio)));
+
+        filtrosAnioEl.appendChild(wrap);
+    }
+
+    function crearBtnFiltro(label, valor) {
+        const btn = document.createElement('button');
+        btn.className = 'ps-filtro-btn';
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+            _anioActivo = valor;
+            // Actualizar estado visual de todos los botones
+            filtrosAnioEl.querySelectorAll('.ps-filtro-btn')
+                .forEach(b => b.classList.remove('activo'));
+            btn.classList.add('activo');
+            aplicarFiltros();
+        });
+        return btn;
+    }
+
+    /* ── Combina filtro texto (backend) + filtro año (cliente) y renderiza ── */
+    async function aplicarFiltros() {
+        const q = buscador.value.trim();
+        let base;
+        if (q) {
+            if (_abortController) _abortController.abort();
+            _abortController = new AbortController();
+            try {
+                const url = `${BASE}pruebas_admision?first=0&max=200&buscar=${encodeURIComponent(q)}`;
+                const pruebas = await fetch(url, { signal: _abortController.signal })
+                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`));
+                base = ensamblar(pruebas, _turnosBrutos, _dispsBrutos);
+            } catch (e) {
+                if (e?.name === 'AbortError') return;
+                base = [];
+            }
+        } else {
+            base = _todos;
+        }
+        const resultado = _anioActivo !== null
+            ? base.filter(p => p.anio == _anioActivo)
+            : base;
+        renderizar(resultado);
+    }
+
+    /* ── Agrupa lista por año en un Map ordenado desc ── */
+    function agruparPorAnio(lista) {
+        const mapa = new Map();
+        // Ordenar desc por año antes de agrupar
+        const ordenada = [...lista].sort((a, b) => Number(b.anio) - Number(a.anio));
+        for (const p of ordenada) {
+            const k = p.anio ?? '—';
+            if (!mapa.has(k)) mapa.set(k, []);
+            mapa.get(k).push(p);
+        }
+        return mapa; // Map<año, proceso[]> en orden desc
+    }
+
+    /* ══════════════════════════════════════════════════
+       BÚSQUEDA — fetch al backend con debounce 300 ms
+    ══════════════════════════════════════════════════ */
     let _debounce;
     buscador.addEventListener('input', () => {
         clearTimeout(_debounce);
-        _debounce = setTimeout(() => cargar(buscador.value.trim()), 300);
+        _debounce = setTimeout(aplicarFiltros, 300);
     });
+
+    /* ══════════════════════════════════════════════════
+       UTILIDADES
+    ══════════════════════════════════════════════════ */
+    function fmtFecha(iso) {
+        if (!iso) return '—';
+        try {
+            return new Date(iso + 'T12:00:00').toLocaleDateString('es-SV', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            });
+        } catch { return iso; }
+    }
+
+    function esc(s) {
+        return String(s ?? '')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function actualizarContador(n) {
+        contador.innerHTML = n > 0
+            ? `<strong>${n}</strong> proceso${n !== 1 ? 's' : ''} encontrado${n !== 1 ? 's' : ''}`
+            : '';
+    }
+
+    function mostrarSkeleton() {
+        grid.innerHTML = Array.from({length: 4}, () => `
+            <div class="ps-card" aria-hidden="true">
+                <div style="background:linear-gradient(135deg,#1e2e5c,#1E3A8A);
+                            padding:var(--space-md) var(--space-lg);">
+                    <div style="display:flex;justify-content:space-between;
+                                margin-bottom:var(--space-sm);">
+                        <div class="ps-skeleton-rect" style="height:20px;width:72px;"></div>
+                        <div class="ps-skeleton-rect" style="height:20px;width:44px;"></div>
+                    </div>
+                    <div class="ps-skeleton-rect"
+                         style="height:15px;width:75%;opacity:.5;"></div>
+                </div>
+                <div class="ps-card-body">
+                    <div class="ps-info-grid">
+                        ${Array.from({length: 4}, () => `
+                        <div class="ps-campo">
+                            <div class="ps-skeleton-rect"
+                                 style="height:10px;width:60%;margin-bottom:5px;"></div>
+                            <div class="ps-skeleton-rect"
+                                 style="height:14px;width:85%;"></div>
+                        </div>`).join('')}
+                        <div class="ps-campo full">
+                            <div class="ps-skeleton-rect"
+                                 style="height:10px;width:35%;margin-bottom:6px;"></div>
+                            <div class="ps-skeleton-rect"
+                                 style="height:22px;width:48%;border-radius:9999px;"></div>
+                        </div>
+                    </div>
+                    <div class="ps-skeleton-rect"
+                         style="height:38px;width:100%;border-radius:var(--radius-md);
+                                margin-top:var(--space-sm);"></div>
+                </div>
+            </div>`).join('');
+    }
+
+    function mostrarError(msg) {
+        grid.innerHTML = `
+            <div class="ps-empty">
+                <div class="ps-empty-icon">⚠️</div>
+                <p style="font-size:1rem;font-weight:500;color:var(--color-danger);">
+                    ${msg}
+                </p>
+            </div>`;
+    }
+
+    /* ── Íconos SVG inline (12×12) ── */
+    const icoCalendario = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+
+    const icoReloj = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/></svg>`;
+
+    const icoSol = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`;
+
+    const icoPinMap = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+        <circle cx="12" cy="10" r="3"/></svg>`;
+
+    /* ── Arranque ── */
+    cargarDatos();
 </script>
