@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E3A8A">
+    <title>Sin conexión — Ingreso Universitario</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --color-primary:      #1E3A8A;
+            --color-primary-dark: #1e2e5c;
+            --color-text:         #111827;
+            --color-text-muted:   #6B7280;
+            --color-bg:           #F9FAFB;
+            --color-surface:      #FFFFFF;
+            --color-border:       #E5E7EB;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+        }
+
+        .logo {
+            width: 72px;
+            height: 72px;
+            background: var(--color-primary);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.75rem;
+        }
+
+        .logo svg {
+            width: 40px;
+            height: 40px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icono-offline {
+            font-size: 3.5rem;
+            margin-bottom: 1.25rem;
+            display: block;
+            line-height: 1;
+        }
+
+        h1 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            font-size: 0.95rem;
+            color: var(--color-text-muted);
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .detalle {
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .btn-reintentar {
+            display: inline-block;
+            padding: 0.7rem 2rem;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 200ms ease, transform 100ms ease;
+            text-decoration: none;
+        }
+
+        .btn-reintentar:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-reintentar:active {
+            transform: scale(0.97);
+        }
+
+        footer {
+            margin-top: 2.5rem;
+            font-size: 0.78rem;
+            color: var(--color-text-muted);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- Logo institucional -->
+        <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 3L2 9l10 6 10-6-10-6z"/>
+                <path d="M2 17l10 6 10-6"/>
+                <path d="M2 13l10 6 10-6"/>
+            </svg>
+        </div>
+
+        <!-- Ícono de estado offline -->
+        <span class="icono-offline" role="img" aria-label="Sin conexión">📶</span>
+
+        <h1>Sin conexión a internet</h1>
+        <p>No se pudo conectar con el servidor.</p>
+        <p class="detalle">
+            Revisa tu conexión a Wi-Fi o datos móviles e intenta nuevamente.
+        </p>
+
+        <button
+            class="btn-reintentar"
+            onclick="window.location.reload()"
+            aria-label="Reintentar conexión"
+        >
+            Reintentar
+        </button>
+    </div>
+
+    <footer>
+        Universidad de El Salvador &mdash; Sistema de Ingreso Universitario
+    </footer>
+
+</body>
+</html>

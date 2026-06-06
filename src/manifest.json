@@ -1,0 +1,44 @@
+{
+    "name": "INGRESO UNIVERSITARIO UES",
+    "short_name": "INGRESO UES",
+    "description": "Sistema de inscripción y examen de ingreso universitario — Universidad de El Salvador",
+    "start_url": "/pwa.html",
+    "id": "/pwa.html",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#1E3A8A",
+    "background_color": "#FFFFFF",
+    "lang": "es",
+    "icons": [
+        {
+            "src": "/img/iconos/logo_192_192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/img/iconos/logo_512_512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "categories": [
+        "education"
+    ],
+    "screenshots": [
+        {
+            "src": "/img/screenshots/captura-escritorio.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Vista principal del sistema"
+        },
+        {
+            "src": "/img/screenshots/captura-movil.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Vista móvil del sistema"
+        }
+    ]
+}

@@ -191,8 +191,25 @@ input:focus, select:focus, textarea:focus {
 .mb-md { margin-bottom: var(--space-md); }
 .mb-lg { margin-bottom: var(--space-lg); }
 
-.hidden  { display: none !important; }
-.visible { display: block; }
+[hidden]  { display: none !important; }
+.hidden   { display: none !important; }
+.visible  { display: block; }
+
+.btn-pwa-instalar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: var(--space-md);
+    padding: 6px 14px;
+    background: white;
+    color: var(--color-primary);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
 
 /* Loading spinner */
 .spinner {

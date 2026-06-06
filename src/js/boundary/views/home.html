@@ -25,6 +25,52 @@
         margin: 0 auto var(--space-xl);
     }
 
+    .hero-layout {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .hero-logo {
+        width: 180px;
+        height: 180px;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .hero-content {
+        text-align: left;
+    }
+
+    .hero-content h1 {
+        margin-bottom: var(--space-md);
+    }
+
+    .hero-content p {
+        max-width: 520px;
+        margin: 0 0 var(--space-xl);
+    }
+
+    @media (max-width: 768px) {
+        .hero-layout {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+        }
+
+        .hero-content {
+            text-align: center;
+        }
+
+        .hero-content p {
+            margin: 0 auto var(--space-xl);
+        }
+    }
+
     .paso-card {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -61,14 +107,19 @@
 
 <!-- ── 1. HERO ── -->
 <section class="home-hero mb-lg">
-    <h1>Sistema de Ingreso Universitario</h1>
-    <p>
-        Bienvenido al proceso oficial de admisión. Registra tus datos,
-        selecciona tu carrera y rinde la prueba en línea.
-    </p>
-    <a href="#/registro" class="btn btn-secondary" style="font-size:1.1rem; padding: var(--space-md) var(--space-2xl);">
-        Comenzar inscripción
-    </a>
+    <div class="hero-layout">
+        <img src="/img/iconos/logo_512_512.png" alt="Logo Ingreso UES" class="hero-logo">
+        <div class="hero-content">
+            <h1>Sistema de Ingreso Universitario</h1>
+            <p>
+                Bienvenido al proceso oficial de admisión. Registra tus datos,
+                selecciona tu carrera y rinde la prueba en línea.
+            </p>
+            <a href="#/registro" class="btn btn-secondary" style="font-size:1.1rem; padding: var(--space-md) var(--space-2xl);">
+                Comenzar inscripción
+            </a>
+        </div>
+    </div>
 </section>
 
 <!-- ── 2. PASOS DEL PROCESO ── -->

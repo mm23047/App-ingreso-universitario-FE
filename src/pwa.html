@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E3A8A">
+    <meta name="description" content="Sistema de inscripción y examen de ingreso universitario">
+
+    <!-- PWA: iOS / Safari -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ingreso UES">
+
+    <title>Ingreso Universitario</title>
+
+    <!-- PWA manifest (único) -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./img/iconos/logo_192_192.png">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/grid-layout.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+    <!-- Overlay de carga global -->
+    <div id="loading-overlay" role="status" aria-label="Cargando...">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notificaciones toast -->
+    <app-toast></app-toast>
+
+    <!-- Navegación principal -->
+    <header class="no-print" style="background: var(--color-primary); color: white; padding: var(--space-md) 0;">
+        <div class="container" style="display:flex; align-items:center; justify-content:space-between; gap: var(--space-sm); flex-wrap: wrap;">
+            <h1 style="font-size:1.25rem; color:white; margin:0;">Ingreso Universitario</h1>
+            <nav style="display:flex; align-items:center; flex-wrap:wrap; gap: 0.25rem;">
+                <a href="#/"          style="color:white; margin-left:var(--space-md);">Inicio</a>
+                <a href="#/carreras"  style="color:white; margin-left:var(--space-md);">Carreras</a>
+                <a href="#/registro"  style="color:white; margin-left:var(--space-md);">Registro</a>
+                <a href="#/procesos"  style="color:white; margin-left:var(--space-md);">Procesos</a>
+                <a href="#/areas"     style="color:white; margin-left:var(--space-md);">Áreas</a>
+                <a href="#/resultado" style="color:white; margin-left:var(--space-md);">Resultado</a>
+                <button id="btn-instalar" hidden class="btn-pwa-instalar">
+                    ⬇ Instalar app
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenido dinámico de la SPA -->
+    <main id="app-content" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+        <p class="text-muted text-center">Cargando aplicación...</p>
+    </main>
+
+    <footer class="no-print" style="background:var(--color-primary-dark); color:white; text-align:center; padding:var(--space-md); margin-top:auto;">
+        <p style="margin:0; font-size:.85rem;">Universidad de El Salvador &mdash; Sistema de Ingreso</p>
+    </footer>
+
+    <!-- Módulo principal de la SPA -->
+    <script type="module">
+        import { store, subscribe } from './js/infra/app_state.js';
+        import router from './js/infra/router.js';
+        import './js/boundary/components/notificacion-toast.js';
+        import './js/boundary/components/contador.js';
+
+        /* ── Loading overlay ── */
+        const overlay = document.getElementById('loading-overlay');
+        subscribe('loading', (isLoading) => {
+            overlay.classList.toggle('active', isLoading);
+        });
+
+        /* ══════════════════════════════════════════════
+           SERVICE WORKER
+           Ruta: ./sw.js → http://localhost:3000/sw.js
+           Scope: / (toda la app bajo src/)
+        ══════════════════════════════════════════════ */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker
+                    .register('./sw.js')
+                    .then(reg => {
+                        console.log('[PWA] Service Worker registrado, scope:', reg.scope);
+
+                        /* Notificar al SW que se actualice si hay una versión nueva esperando */
+                        if (reg.waiting) {
+                            reg.waiting.postMessage('SKIP_WAITING');
+                        }
+
+                        reg.addEventListener('updatefound', () => {
+                            const nuevoSW = reg.installing;
+                            nuevoSW.addEventListener('statechange', () => {
+                                if (nuevoSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                    nuevoSW.postMessage('SKIP_WAITING');
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => console.warn('[PWA] Service Worker no registrado:', err));
+            });
+        } else {
+            console.warn('[PWA] Service Workers no soportados en este navegador');
+        }
+
+        /* ══════════════════════════════════════════════
+           INSTALACIÓN PWA
+        ══════════════════════════════════════════════ */
+        const btnInstalar = document.getElementById('btn-instalar');
+        let _promptEvento = null;
+        const _PWA_KEY = 'pwa-instalada';
+
+        /* Verifica por modo standalone Y por flag persistente en localStorage */
+        const _yaInstalada = () =>
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            localStorage.getItem(_PWA_KEY) === '1';
+
+        const _marcarInstalada = () => {
+            localStorage.setItem(_PWA_KEY, '1');
+            btnInstalar.hidden = true;
+            _promptEvento = null;
+        };
+
+        /* Check inmediato al cargar: si ya está instalada, el botón nunca aparece */
+        if (_yaInstalada()) btnInstalar.hidden = true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            if (_yaInstalada()) return;
+            _promptEvento = e;
+            btnInstalar.hidden = false;
+        });
+
+        btnInstalar.addEventListener('click', async () => {
+            if (!_promptEvento) return;
+            _promptEvento.prompt();
+            const { outcome } = await _promptEvento.userChoice;
+            _promptEvento = null;
+            if (outcome === 'accepted') {
+                _marcarInstalada();
+            } else {
+                btnInstalar.hidden = true;
+            }
+        });
+
+        window.addEventListener('appinstalled', _marcarInstalada);
+
+        /* ══════════════════════════════════════════════
+           VALIDACIÓN PWA (diagnóstico en consola)
+        ══════════════════════════════════════════════ */
+        window.addEventListener('load', async () => {
+            /* Verificar manifest */
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) {
+                try {
+                    const res = await fetch(manifestLink.href);
+                    if (res.ok) console.log('[PWA] Manifest cargado:', manifestLink.href);
+                    else console.warn('[PWA] Manifest no accesible:', res.status);
+                } catch {
+                    console.warn('[PWA] No se pudo verificar el manifest');
+                }
+            }
+
+            /* Verificar SW registrado */
+            if ('serviceWorker' in navigator) {
+                const reg = await navigator.serviceWorker.getRegistration();
+                if (reg) {
+                    console.log('[PWA] Service Worker activo — scope:', reg.scope);
+                } else {
+                    console.warn('[PWA] No hay Service Worker registrado todavía');
+                }
+            }
+
+            if (_yaInstalada()) {
+                console.log('[PWA] Ejecutando en modo standalone (instalada)');
+            }
+        });
+
+        /* ══════════════════════════════════════════════
+           CARGA DINÁMICA DE VISTAS (SPA)
+        ══════════════════════════════════════════════ */
+        const appContent = document.getElementById('app-content');
+
+        const _cargarVista = async (nombre) => {
+            try {
+                const resp = await fetch(`./js/boundary/views/${nombre}.html`);
+                if (!resp.ok) throw new Error(`Vista "${nombre}" no encontrada`);
+                appContent.innerHTML = await resp.text();
+                /* Re-ejecutar scripts inline del fragmento cargado */
+                appContent.querySelectorAll('script[type="module"]').forEach(s => {
+                    const nuevo = document.createElement('script');
+                    nuevo.type = 'module';
+                    nuevo.textContent = s.textContent;
+                    s.replaceWith(nuevo);
+                });
+            } catch (err) {
+                console.error('[Router] Error al cargar vista:', err);
+                appContent.innerHTML = `<p class="text-danger text-center mt-lg">Error al cargar la página.</p>`;
+            }
+        };
+
+        const toast = document.querySelector('app-toast');
+
+        const _avisarOffline = () => {
+            toast.warning(
+                'Sin conexión a internet. La aplicación no está disponible en este momento. ' +
+                'Conéctate para poder usar todas las funciones.',
+                5000
+            );
+        };
+
+        /* Cuando se pierde la conexión → redirigir al inicio y avisar */
+        window.addEventListener('offline', () => {
+            router.navigate('/');
+            _avisarOffline();
+        });
+
+        /* Cuando se recupera la conexión → avisar */
+        window.addEventListener('online', () => {
+            toast.success('Conexión restaurada. Ya puedes usar la aplicación.', 4000);
+        });
+
+        window.addEventListener('route-changed', ({ detail }) => {
+            /* Offline: solo se permite la vista de inicio */
+            if (!navigator.onLine && detail.ruta !== '/') {
+                router.navigate('/');
+                _avisarOffline();
+                return;
+            }
+            _cargarVista(detail.nombre);
+        });
+    </script>
+
+</body>
+</html>
