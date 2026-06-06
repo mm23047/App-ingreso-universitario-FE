@@ -1,6 +1,7 @@
 import ExamenRealizadoDao from './examen_realizado_dao.js';
 import RespuestaExamenDao from './respuesta_examen_dao.js';
 import PreguntasDao from './preguntas_dao.js';
+import AspirantesDao from './aspirantes_dao.js';
 import { store } from '../infra/app_state.js';
 import { navigate } from '../infra/router.js';
 
@@ -9,6 +10,7 @@ class ExamenController {
         this.examenRealizadoDao = new ExamenRealizadoDao();
         this.respuestaExamenDao = new RespuestaExamenDao();
         this.preguntasDao       = new PreguntasDao();
+        this.aspirantesDao      = new AspirantesDao();
     }
 
     async iniciar() {
@@ -150,6 +152,19 @@ class ExamenController {
         } catch (error) {
             console.error('Error al recuperar respuestas:', error);
             return [];
+        }
+    }
+
+    async consultarInscripciones(aspiranteId) {
+        if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
+        store.loading = true;
+        try {
+            return await this.aspirantesDao.obtenerInscripciones(aspiranteId);
+        } catch (error) {
+            console.error('Error al consultar inscripciones del aspirante:', error);
+            throw error;
+        } finally {
+            store.loading = false;
         }
     }
 

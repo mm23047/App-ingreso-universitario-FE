@@ -68,6 +68,26 @@ class AspirantesDao extends DefaultDao {
         }
     }
 
+    async obtenerInscripciones(aspiranteId) {
+        if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
+        try {
+            const respuesta = await fetch(`${this.BASE_URL}/${aspiranteId}/inscripciones`, { method: 'GET' });
+            if (respuesta.status === 200) {
+                return (await respuesta.json()).map(data => new InscripcionPrueba(
+                    data.idInscripcionPrueba ?? null,
+                    data.aspiranteDato       ?? null,
+                    data.pruebaAdmision      ?? null,
+                    data.estado              ?? 'INSCRITO'
+                ));
+            }
+            if (respuesta.status === 404) return [];
+            throw new Error(`Error HTTP: ${respuesta.status}`);
+        } catch (error) {
+            console.error('Error al obtener inscripciones del aspirante:', error);
+            throw error;
+        }
+    }
+
     async crearInscripcion(aspiranteId, pruebaAdmisionId) {
         if (!aspiranteId || !pruebaAdmisionId) {
             throw new Error('El ID del aspirante y el ID de la prueba son requeridos');
