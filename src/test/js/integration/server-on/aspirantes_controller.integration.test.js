@@ -1,10 +1,11 @@
 import { expect } from '../../lib/chai/index.js';
 import AspirantesController from '../../../../js/control/aspirantes_controller.js';
+import AspirantesDao from '../../../../js/control/aspirantes_dao.js';
 import Aspirante from '../../../../js/entity/Aspirante.js';
 import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 // Genera datos únicos por llamada para evitar colisiones entre ejecuciones del test.
-// No existe endpoint DELETE para aspirantes — los registros se acumulan en BD con dominio @tpi-test.sv.
+// Los registros creados se eliminan con DELETE /aspirantes/{id} en el afterEach.
 function generarDatos(prefijo = 'ctrl') {
     const n = Math.floor(Math.random() * 99999999);
     const d = Math.floor(Math.random() * 9);
@@ -22,13 +23,28 @@ const TIPOS_NEGOCIO_CONOCIDOS = ['DUI_DUPLICADO', 'CORREO_DUPLICADO', 'EDAD_MINI
 
 describe('AspirantesController — Integración con backend', () => {
     let ctrl;
+    let daoLimpieza;          // instancia independiente usada solo para DELETE en afterEach
+    const idsCreados = [];    // IDs creados por cada test; drenados en afterEach
 
     beforeEach(() => {
-        ctrl = new AspirantesController();
+        ctrl         = new AspirantesController();
+        daoLimpieza  = new AspirantesDao();
         resetStore();
     });
 
-    afterEach(() => {
+    // Limpieza real vía DELETE /aspirantes/{id} + reset de estado global.
+    // best-effort: si el borrado falla (ej. servidor cayó tras el test), se avisa por consola
+    // pero no enmascara el resultado del test ya ejecutado.
+    afterEach(async function () {
+        this.timeout(5000);
+        while (idsCreados.length > 0) {
+            const id = idsCreados.pop();
+            try {
+                await daoLimpieza.eliminar(id);
+            } catch (e) {
+                console.warn(`[cleanup] No se pudo eliminar aspirante ${id}: ${e.message}`);
+            }
+        }
         resetStore();
     });
 
@@ -40,8 +56,8 @@ describe('AspirantesController — Integración con backend', () => {
             this.timeout(5000);
             const datos = generarDatos();
 
-            // Sin try/catch: TypeError si el servidor está apagado → test falla correctamente
             const resultado = await ctrl.registrar(datos);
+            idsCreados.push(resultado.id); // registrar para limpieza
 
             expect(resultado).to.be.instanceOf(Aspirante);
             expect(store.aspirante).to.not.be.null;
@@ -55,7 +71,8 @@ describe('AspirantesController — Integración con backend', () => {
             const datos = generarDatos('dup');
 
             // Primera llamada: crea el aspirante — sin try/catch, falla si el servidor está apagado
-            await ctrl.registrar(datos);
+            const primerAspirante = await ctrl.registrar(datos);
+            idsCreados.push(primerAspirante.id); // registrar para limpieza
             resetStore();
 
             // Segunda llamada: DUI ya existe — el backend debe devolver 409
@@ -78,10 +95,8 @@ describe('AspirantesController — Integración con backend', () => {
             this.timeout(5000);
             const datos = generarDatos('loading');
 
-            // Sin try/catch: TypeError si el servidor está apagado → test falla correctamente.
-            // Con servidor activo y datos únicos → registrar() retorna 201, el finally siempre
-            // ejecuta store.loading = false independientemente del resultado.
-            await ctrl.registrar(datos);
+            const resultado = await ctrl.registrar(datos);
+            idsCreados.push(resultado.id); // registrar para limpieza
 
             expect(store.loading).to.be.false;
         });

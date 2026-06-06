@@ -3,10 +3,12 @@ import Aspirante from '../entity/Aspirante.js';
 import InscripcionPrueba from '../entity/InscripcionPrueba.js';
 
 // Resource: AspirantesDatoResource  @Path("aspirantes")
-// POST /aspirantes  body: { nombres, apellidos, fechaNacimiento, dui, correo, usaSillaRuedas }
-// GET  /aspirantes/{id}
-// GET  /aspirantes/{idAspirante}/inscripciones
-// POST /aspirantes/{idAspirante}/inscripciones  body: { pruebaAdmision: { idPruebaAdmision } }
+// POST   /aspirantes                              body: { nombres, apellidos, fechaNacimiento, dui, correo, usaSillaRuedas }
+// GET    /aspirantes/{id}
+// PUT    /aspirantes/{id}                         body: mismo que POST
+// DELETE /aspirantes/{id}                         → 204; 409 si tiene inscripciones
+// GET    /aspirantes/{idAspirante}/inscripciones
+// POST   /aspirantes/{idAspirante}/inscripciones  body: { pruebaAdmision: { idPruebaAdmision } }
 class AspirantesDao extends DefaultDao {
     constructor() {
         super();
@@ -84,6 +86,20 @@ class AspirantesDao extends DefaultDao {
             throw new Error(`Error HTTP: ${respuesta.status}`);
         } catch (error) {
             console.error('Error al obtener inscripciones del aspirante:', error);
+            throw error;
+        }
+    }
+
+    async eliminar(id) {
+        if (!id) throw new Error('El ID del aspirante es requerido');
+        try {
+            const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'DELETE' });
+            if (respuesta.status === 204) return;
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
+        } catch (error) {
+            console.error('Error al eliminar aspirante:', error);
             throw error;
         }
     }

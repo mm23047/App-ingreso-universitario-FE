@@ -3,7 +3,7 @@ import AspirantesDao from '../../../../js/control/aspirantes_dao.js';
 import Aspirante from '../../../../js/entity/Aspirante.js';
 
 // Genera datos únicos por llamada para evitar colisiones entre ejecuciones del test.
-// No existe endpoint DELETE para aspirantes — los registros se acumulan en BD con dominio @tpi-test.sv.
+// Los registros creados se eliminan con DELETE /aspirantes/{id} en el afterEach.
 function generarDatos(prefijo = 'dao') {
     const n = Math.floor(Math.random() * 99999999);
     const d = Math.floor(Math.random() * 9);
@@ -34,9 +34,25 @@ const TIPOS_NEGOCIO_CONOCIDOS = ['DUI_DUPLICADO', 'CORREO_DUPLICADO', 'EDAD_MINI
 
 describe('AspirantesDao — Integración con backend', () => {
     let dao;
+    const idsCreados = []; // IDs creados por cada test; drenados en afterEach
 
     beforeEach(() => {
         dao = new AspirantesDao();
+    });
+
+    // Limpieza real vía DELETE /aspirantes/{id}.
+    // best-effort: si el borrado falla (ej. servidor cayó tras el test), se avisa por consola
+    // pero no enmascara el resultado del test ya ejecutado.
+    afterEach(async function () {
+        this.timeout(5000);
+        while (idsCreados.length > 0) {
+            const id = idsCreados.pop();
+            try {
+                await dao.eliminar(id);
+            } catch (e) {
+                console.warn(`[cleanup] No se pudo eliminar aspirante ${id}: ${e.message}`);
+            }
+        }
     });
 
     // ── POST /aspirantes ──────────────────────────────────────────────────────
@@ -47,8 +63,8 @@ describe('AspirantesDao — Integración con backend', () => {
             this.timeout(5000);
             const datos = generarDatos();
 
-            // Sin try/catch: TypeError si el servidor está apagado → test falla correctamente
             const resultado = await dao.crear(datos);
+            idsCreados.push(resultado.id); // registrar para limpieza
 
             expect(resultado).to.be.instanceOf(Aspirante);
             expect(resultado.id).to.be.a('string').and.not.equal('');
@@ -63,7 +79,8 @@ describe('AspirantesDao — Integración con backend', () => {
             const datos = generarDatos('dup');
 
             // Primera llamada: crea el aspirante — sin try/catch, falla si el servidor está apagado
-            await dao.crear(datos);
+            const primerAspirante = await dao.crear(datos);
+            idsCreados.push(primerAspirante.id); // registrar para limpieza
 
             // Segunda llamada: el DUI ya existe — el backend debe devolver 409
             let errorDuplicado;
@@ -73,7 +90,6 @@ describe('AspirantesDao — Integración con backend', () => {
                 errorDuplicado = error;
             }
 
-            // Si el servidor respondió en la primera pero no en la segunda → error de red real
             expect(errorDuplicado, 'La segunda llamada con DUI duplicado debe ser rechazada').to.exist;
             expect(errorDuplicado.httpStatus, 'Error de red en segunda llamada — ¿cayó el servidor?').to.be.a('number');
             expect(errorDuplicado.httpStatus).to.equal(409);
@@ -88,13 +104,13 @@ describe('AspirantesDao — Integración con backend', () => {
 
             try {
                 await dao.crear(datos);
+                // Si llega aquí el backend no rechazó al menor — no hay ID que limpiar
             } catch (error) {
                 errorCapturado = error;
+                // El backend rechazó antes de persistir — no hay ID que registrar
             }
 
-            // El backend debe rechazar al menor de edad — si no hubo error, el backend no está validando
             expect(errorCapturado, 'El backend debe rechazar aspirantes menores de edad').to.exist;
-            // httpStatus debe ser un número: si es undefined, el servidor estaba apagado
             expect(errorCapturado.httpStatus, 'Error de red — ¿está el servidor activo?').to.be.a('number');
 
             if (errorCapturado.tipo !== null) {
@@ -114,8 +130,9 @@ describe('AspirantesDao — Integración con backend', () => {
             this.timeout(10000);
             const datos = generarDatos('get');
 
-            // Sin try/catch en ninguna de las dos llamadas: fallos de red fallan el test correctamente
             const aspiranteCreado = await dao.crear(datos);
+            idsCreados.push(aspiranteCreado.id); // registrar para limpieza
+
             const resultado = await dao.obtenerPorId(aspiranteCreado.id);
 
             expect(resultado).to.be.instanceOf(Aspirante);
