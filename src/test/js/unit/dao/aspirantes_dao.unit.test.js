@@ -85,24 +85,34 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
         });
 
         it('debe lanzar error cuando el servidor responde 400', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 400, json: () => Promise.reject(new Error('Bad Request')) });
+            // crear() lee .text() para non-201 — el stub debe proveer text(), no json()
+            sinon.stub(window, 'fetch').resolves({
+                status: 400,
+                text: () => Promise.resolve(JSON.stringify({ tipo: null, mensaje: 'Solicitud inválida' }))
+            });
 
             try {
                 await aspirantesDao.crear(mockAspirante);
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
+                expect(error.httpStatus).to.equal(400);
             }
         });
 
         it('debe lanzar error cuando el servidor responde 409 (DUI duplicado)', async () => {
-            sinon.stub(window, 'fetch').resolves({ status: 409, json: () => Promise.reject(new Error('Conflict')) });
+            // crear() lee .text() para non-201 — el stub debe proveer text(), no json()
+            sinon.stub(window, 'fetch').resolves({
+                status: 409,
+                text: () => Promise.resolve(JSON.stringify({ tipo: 'DUI_DUPLICADO', mensaje: 'Conflicto de recurso' }))
+            });
 
             try {
                 await aspirantesDao.crear(mockAspirante);
                 expect.fail('Debería haber lanzado un error');
             } catch (error) {
                 expect(error).to.be.instanceOf(Error);
+                expect(error.httpStatus).to.equal(409);
             }
         });
 
@@ -320,6 +330,150 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
                 expect.fail();
             } catch (e) {
                 expect(e).to.be.instanceOf(Error);
+            }
+        });
+    });
+
+    // ── crear — contrato HTTP del POST ───────────────────────────────────────
+    describe('crear — contrato HTTP del POST', () => {
+        const mockRespuesta201 = { ...mockAspirante, id: 'uuid-1', fechaCreacionPerfil: null };
+
+        it('debe usar método POST', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => {
+                capturedOpts = opts;
+                return Promise.resolve({ status: 201, json: () => Promise.resolve(mockRespuesta201) });
+            };
+
+            await aspirantesDao.crear(mockAspirante);
+
+            expect(capturedOpts.method).to.equal('POST');
+        });
+
+        it('URL debe apuntar al endpoint /aspirantes', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => {
+                capturedUrl = url;
+                return Promise.resolve({ status: 201, json: () => Promise.resolve(mockRespuesta201) });
+            };
+
+            await aspirantesDao.crear(mockAspirante);
+
+            expect(capturedUrl).to.match(/\/aspirantes$/);
+        });
+
+        it('body debe incluir todos los campos del formulario de registro', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => {
+                capturedOpts = opts;
+                return Promise.resolve({ status: 201, json: () => Promise.resolve(mockRespuesta201) });
+            };
+
+            await aspirantesDao.crear(mockAspirante);
+
+            const body = JSON.parse(capturedOpts.body);
+            expect(body).to.have.property('nombres',         'Juan');
+            expect(body).to.have.property('apellidos',       'Pérez');
+            expect(body).to.have.property('dui',             '01234567-8');
+            expect(body).to.have.property('correo',          'juan@mail.com');
+            expect(body).to.have.property('fechaNacimiento', '2000-05-15');
+            expect(body).to.have.property('usaSillaRuedas',  false);
+        });
+
+        it('debe enviar usaSillaRuedas:true cuando el aspirante lo requiere', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            const conSilla = { ...mockAspirante, usaSillaRuedas: true };
+            window.fetch = (url, opts) => {
+                capturedOpts = opts;
+                return Promise.resolve({ status: 201, json: () => Promise.resolve({ ...conSilla, id: 'uuid-2', fechaCreacionPerfil: null }) });
+            };
+
+            await aspirantesDao.crear(conSilla);
+
+            const body = JSON.parse(capturedOpts.body);
+            expect(body.usaSillaRuedas).to.be.true;
+        });
+    });
+
+    // ── crear — parsing de ErrorNegocioDTO estructurado ──────────────────────
+    describe('crear — parsing de ErrorNegocioDTO', () => {
+        it('debe asignar err.tipo = DUI_DUPLICADO cuando el backend devuelve ese error', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 409,
+                text: () => Promise.resolve(JSON.stringify({ tipo: 'DUI_DUPLICADO', mensaje: 'El DUI ya está registrado' }))
+            });
+
+            try {
+                await aspirantesDao.crear(mockAspirante);
+                expect.fail();
+            } catch (e) {
+                expect(e.tipo).to.equal('DUI_DUPLICADO');
+                expect(e.mensajeNegocio).to.equal('El DUI ya está registrado');
+                expect(e.httpStatus).to.equal(409);
+            }
+        });
+
+        it('debe asignar err.tipo = CORREO_DUPLICADO cuando el correo ya existe', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 409,
+                text: () => Promise.resolve(JSON.stringify({ tipo: 'CORREO_DUPLICADO', mensaje: 'El correo ya está registrado' }))
+            });
+
+            try {
+                await aspirantesDao.crear(mockAspirante);
+                expect.fail();
+            } catch (e) {
+                expect(e.tipo).to.equal('CORREO_DUPLICADO');
+                expect(e.mensajeNegocio).to.equal('El correo ya está registrado');
+            }
+        });
+
+        it('debe asignar err.tipo = EDAD_MINIMA cuando el aspirante no cumple la edad mínima', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 422,
+                text: () => Promise.resolve(JSON.stringify({ tipo: 'EDAD_MINIMA', mensaje: 'El aspirante no cumple la edad mínima requerida' }))
+            });
+
+            try {
+                await aspirantesDao.crear(mockAspirante);
+                expect.fail();
+            } catch (e) {
+                expect(e.tipo).to.equal('EDAD_MINIMA');
+                expect(e.mensajeNegocio).to.include('edad');
+                expect(e.httpStatus).to.equal(422);
+            }
+        });
+
+        it('debe asignar err.tipo = null cuando la respuesta de error no tiene body', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 409,
+                text: () => Promise.resolve('')
+            });
+
+            try {
+                await aspirantesDao.crear(mockAspirante);
+                expect.fail();
+            } catch (e) {
+                expect(e.tipo).to.be.null;
+                expect(e.httpStatus).to.equal(409);
+            }
+        });
+
+        it('debe asignar err.httpStatus al código HTTP de la respuesta de error', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 400,
+                text: () => Promise.resolve(JSON.stringify({ tipo: null, mensaje: 'Datos inválidos' }))
+            });
+
+            try {
+                await aspirantesDao.crear(mockAspirante);
+                expect.fail();
+            } catch (e) {
+                expect(e.httpStatus).to.equal(400);
             }
         });
     });

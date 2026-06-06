@@ -242,7 +242,7 @@ describe('LocalStorageDao - Pruebas Unitarias', () => {
         });
     });
 
-    describe('Integración - Flujo Completo', () => {
+    describe('Flujo Completo', () => {
         it('debe guardar turno, seleccionar y obtener', () => {
             LocalStorageDao.guardarTurno(1);
             LocalStorageDao.guardarTurno(2);

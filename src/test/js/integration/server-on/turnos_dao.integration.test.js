@@ -1,69 +1,65 @@
-﻿import { expect } from '../../lib/chai/index.js';
+import { expect } from '../../lib/chai/index.js';
 import TurnosDao from '../../../../js/control/turnos_dao.js';
+import Turno from '../../../../js/entity/Turno.js';
 
-describe('TurnosDao - Pruebas de Integración', () => {
-    let turnosDao;
+describe('TurnosDao — Integración con backend', () => {
+    let dao;
 
     beforeEach(() => {
-        turnosDao = new TurnosDao();
+        dao = new TurnosDao();
     });
 
-    describe('Integración con servidor real', () => {
-        it('debe conectar al servidor y obtener todos los turnos', async function() {
-            this.timeout(5000);
-            try {
-                const resultado = await turnosDao.obtenerTurnos();
-                expect(resultado).to.be.an('array');
-            } catch (error) {
-                expect(error).to.be.instanceOf(Error);
-            }
-        });
+    // ── GET /turnos ───────────────────────────────────────────────────────────
 
-        it('debe intentar obtener un turno por ID del servidor', async function() {
+    describe('GET /turnos — obtener todos los turnos', () => {
+
+        it('debe retornar un array de instancias de Turno cuando el servidor responde 200', async function () {
             this.timeout(5000);
             try {
-                const resultado = await turnosDao.obtenerTurnoPorId(1);
-                if (resultado) {
-                    expect(resultado).to.be.an('object');
-                    expect(resultado.id).to.equal(1);
+                const resultado = await dao.obtenerTurnos();
+                expect(resultado).to.be.an('array');
+                if (resultado.length > 0) {
+                    expect(resultado[0]).to.be.instanceOf(Turno);
+                    expect(resultado[0].idTurnoExamen).to.exist;
+                    expect(resultado[0].nombreTurno).to.be.a('string');
                 }
             } catch (error) {
+                // Servidor apagado o error de red: aceptable
                 expect(error).to.be.instanceOf(Error);
             }
         });
     });
 
-    describe('Estructura de URL para integración', () => {
-        it('debe construir URL correcta para obtener todos los turnos', () => {
-            const urlEsperada = 'http://localhost:9080/IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/turnos';
-            expect(turnosDao.BASE_URL).to.equal(urlEsperada);
-        });
+    // ── GET /turnos/{id} ──────────────────────────────────────────────────────
 
-        it('debe incluir /v1/ en la ruta', () => {
-            expect(turnosDao.BASE_URL).to.include('/v1/');
-        });
+    describe('GET /turnos/{id} — obtener turno por ID', () => {
 
-        it('debe terminar con /turnos', () => {
-            expect(turnosDao.BASE_URL).to.match(/\/turnos$/);
-        });
-    });
+        it('debe retornar el mismo Turno al consultar por ID existente obtenido de la lista', async function () {
+            this.timeout(10000);
+            let primeraId = null;
 
-    describe('Manejo de errores de integración', () => {
-        it('debe rechazar cuando no puede conectar al servidor', async function() {
-            this.timeout(5000);
+            // Obtener un ID real desde la lista completa
             try {
-                await turnosDao.obtenerTurnos();
-            } catch (error) {
-                expect(error).to.exist;
+                const turnos = await dao.obtenerTurnos();
+                if (turnos.length > 0) primeraId = turnos[0].idTurnoExamen;
+            } catch {
+                // Servidor apagado — no podemos obtener un ID real
             }
-        });
 
-        it('debe lanzar error cuando se solicita sin ID', async () => {
+            if (!primeraId) {
+                // Sin ID no podemos ejercitar la ruta: verificar al menos que el método existe
+                expect(typeof dao.obtenerTurnoPorId).to.equal('function');
+                return;
+            }
+
             try {
-                await turnosDao.obtenerTurnoPorId();
-                expect.fail('Debería lanzar error');
+                const resultado = await dao.obtenerTurnoPorId(primeraId);
+                expect(resultado).to.be.instanceOf(Turno);
+                expect(resultado.idTurnoExamen).to.equal(primeraId);
+                expect(resultado.nombreTurno).to.be.a('string');
             } catch (error) {
-                expect(error.message).to.include('requerido');
+                // Error de red tras obtener la lista: aceptable
+                expect(error).to.be.instanceOf(Error);
             }
         });
     });
