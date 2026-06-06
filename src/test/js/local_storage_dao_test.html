@@ -14,11 +14,10 @@
     <script src="lib/chai/register-should.js"></script>
     <script type="module">
         import mocha from './lib/mocha/mocha.js';
-        
+
         mocha.setup('bdd');
 
-        // Importar las pruebas
-        import('./local_storage_dao.unit.test.js').then(() => {
+        import('./unit/infra/local_storage_dao.unit.test.js').then(() => {
             mocha.run();
         });
     </script>

@@ -1,8 +1,8 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import AreasConocimientoDao from '../../js/control/areas_dao.js';
-import AreaConocimiento from '../../js/entity/AreaConocimiento.js';
-import Tema from '../../js/entity/Tema.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import AreasConocimientoDao from '../../../../js/control/areas_dao.js';
+import AreaConocimiento from '../../../../js/entity/AreaConocimiento.js';
+import Tema from '../../../../js/entity/Tema.js';
 
 describe('AreasConocimientoDao - Pruebas Unitarias con Stubs', () => {
     let dao;

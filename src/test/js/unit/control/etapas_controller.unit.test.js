@@ -1,9 +1,9 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import EtapasController from '../../js/control/etapas_controller.js';
-import EtapasDao from '../../js/control/etapas_dao.js';
-import EtapasAdmision from '../../js/entity/EtapasAdmision.js';
-import { store, resetStore } from '../../js/infra/app_state.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import EtapasController from '../../../../js/control/etapas_controller.js';
+import EtapasDao from '../../../../js/control/etapas_dao.js';
+import EtapasAdmision from '../../../../js/entity/EtapasAdmision.js';
+import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 describe('EtapasController - Pruebas Unitarias', () => {
     let ctrl;

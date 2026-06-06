@@ -1,8 +1,8 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import TurnosController from '../../js/control/turnos_controller.js';
-import TurnosDao from '../../js/control/turnos_dao.js';
-import { store, resetStore } from '../../js/infra/app_state.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import TurnosController from '../../../../js/control/turnos_controller.js';
+import TurnosDao from '../../../../js/control/turnos_dao.js';
+import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 describe('TurnosController - Pruebas Unitarias', () => {
     let controller;

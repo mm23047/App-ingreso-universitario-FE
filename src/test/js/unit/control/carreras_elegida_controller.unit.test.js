@@ -1,9 +1,9 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import CarrerasElegidaController from '../../js/control/carreras_elegida_controller.js';
-import CarrerasElegidaDao from '../../js/control/carreras_elegida_dao.js';
-import CarrerasElegida from '../../js/entity/CarrerasElegida.js';
-import { store, resetStore } from '../../js/infra/app_state.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import CarrerasElegidaController from '../../../../js/control/carreras_elegida_controller.js';
+import CarrerasElegidaDao from '../../../../js/control/carreras_elegida_dao.js';
+import CarrerasElegida from '../../../../js/entity/CarrerasElegida.js';
+import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 describe('CarrerasElegidaController - Pruebas Unitarias', () => {
     let ctrl;

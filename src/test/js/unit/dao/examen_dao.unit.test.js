@@ -1,9 +1,9 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import ExamenRealizadoDao from '../../js/control/examen_realizado_dao.js';
-import RespuestaExamenDao from '../../js/control/respuesta_examen_dao.js';
-import ExamenRealizado from '../../js/entity/ExamenRealizado.js';
-import RespuestaExamen from '../../js/entity/RespuestaExamen.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import ExamenRealizadoDao from '../../../../js/control/examen_realizado_dao.js';
+import RespuestaExamenDao from '../../../../js/control/respuesta_examen_dao.js';
+import ExamenRealizado from '../../../../js/entity/ExamenRealizado.js';
+import RespuestaExamen from '../../../../js/entity/RespuestaExamen.js';
 
 // ExamenRealizadoDao   → Resource @Path("examen_realizado")
 // RespuestaExamenDao   → Resource @Path("respuestas_examen")

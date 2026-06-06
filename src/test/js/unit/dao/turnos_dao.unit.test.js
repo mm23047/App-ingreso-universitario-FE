@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import TurnosDao from '../../js/control/turnos_dao.js';
-import Turno from '../../js/entity/Turno.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import TurnosDao from '../../../../js/control/turnos_dao.js';
+import Turno from '../../../../js/entity/Turno.js';
 
 describe('TurnosDao - Pruebas Unitarias con Stubs', () => {
     let turnosDao;

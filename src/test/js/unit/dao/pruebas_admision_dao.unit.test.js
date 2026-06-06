@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import PruebasAdmisionDao from '../../js/control/pruebas_admision_dao.js';
-import PruebaAdmision from '../../js/entity/PruebaAdmision.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import PruebasAdmisionDao from '../../../../js/control/pruebas_admision_dao.js';
+import PruebaAdmision from '../../../../js/entity/PruebaAdmision.js';
 
 describe('PruebasAdmisionDao - Pruebas Unitarias con Stubs', () => {
     let dao;

@@ -1,8 +1,8 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import PreguntasDao from '../../js/control/preguntas_dao.js';
-import Pregunta from '../../js/entity/Pregunta.js';
-import Opcion from '../../js/entity/Opcion.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import PreguntasDao from '../../../../js/control/preguntas_dao.js';
+import Pregunta from '../../../../js/entity/Pregunta.js';
+import Opcion from '../../../../js/entity/Opcion.js';
 
 describe('PreguntasDao - Pruebas Unitarias con Stubs', () => {
     let preguntasDao;

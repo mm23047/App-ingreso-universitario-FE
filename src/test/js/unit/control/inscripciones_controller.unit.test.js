@@ -1,13 +1,13 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import InscripcionesController from '../../js/control/inscripciones_controller.js';
-import AspirantesDao from '../../js/control/aspirantes_dao.js';
-import CarrerasElegidaDao from '../../js/control/carreras_elegida_dao.js';
-import PruebasAdmisionDao from '../../js/control/pruebas_admision_dao.js';
-import InscripcionPrueba from '../../js/entity/InscripcionPrueba.js';
-import CarrerasElegida from '../../js/entity/CarrerasElegida.js';
-import PruebaAdmision from '../../js/entity/PruebaAdmision.js';
-import { store, resetStore } from '../../js/infra/app_state.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import InscripcionesController from '../../../../js/control/inscripciones_controller.js';
+import AspirantesDao from '../../../../js/control/aspirantes_dao.js';
+import CarrerasElegidaDao from '../../../../js/control/carreras_elegida_dao.js';
+import PruebasAdmisionDao from '../../../../js/control/pruebas_admision_dao.js';
+import InscripcionPrueba from '../../../../js/entity/InscripcionPrueba.js';
+import CarrerasElegida from '../../../../js/entity/CarrerasElegida.js';
+import PruebaAdmision from '../../../../js/entity/PruebaAdmision.js';
+import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 describe('InscripcionesController - Pruebas Unitarias', () => {
     let ctrl;

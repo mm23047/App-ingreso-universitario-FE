@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import EtapasDao from '../../js/control/etapas_dao.js';
-import EtapasAdmision from '../../js/entity/EtapasAdmision.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import EtapasDao from '../../../../js/control/etapas_dao.js';
+import EtapasAdmision from '../../../../js/entity/EtapasAdmision.js';
 
 describe('EtapasDao - Pruebas Unitarias con Stubs', () => {
     let dao;

@@ -1,12 +1,12 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import ExamenController from '../../js/control/examen_controller.js';
-import ExamenRealizadoDao from '../../js/control/examen_realizado_dao.js';
-import RespuestaExamenDao from '../../js/control/respuesta_examen_dao.js';
-import PreguntasDao from '../../js/control/preguntas_dao.js';
-import ExamenRealizado from '../../js/entity/ExamenRealizado.js';
-import RespuestaExamen from '../../js/entity/RespuestaExamen.js';
-import { store, resetStore } from '../../js/infra/app_state.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import ExamenController from '../../../../js/control/examen_controller.js';
+import ExamenRealizadoDao from '../../../../js/control/examen_realizado_dao.js';
+import RespuestaExamenDao from '../../../../js/control/respuesta_examen_dao.js';
+import PreguntasDao from '../../../../js/control/preguntas_dao.js';
+import ExamenRealizado from '../../../../js/entity/ExamenRealizado.js';
+import RespuestaExamen from '../../../../js/entity/RespuestaExamen.js';
+import { store, resetStore } from '../../../../js/infra/app_state.js';
 
 describe('ExamenController - Pruebas Unitarias', () => {
     let ctrl;
