@@ -161,8 +161,8 @@
                     <dt>Estado</dt>
                     <dd>${estadoInscripcion}</dd>
                     ${ex.carreraAsignada ? `<dt>Carrera asignada</dt><dd>${ex.carreraAsignada}</dd>` : ''}
-                    <dt>ID del examen</dt>
-                    <dd style="font-size:.8rem; color:var(--color-text-muted);">${ex.idExamenRealizado}</dd>
+                    <dt>Clave de examen</dt>
+                    <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>
                 </dl>
             </div>
         `;
