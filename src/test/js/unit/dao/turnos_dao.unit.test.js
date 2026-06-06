@@ -1,7 +1,7 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import TurnosDao from '../../js/control/turnos_dao.js';
-import Turno from '../../js/entity/Turno.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import TurnosDao from '../../../../js/control/turnos_dao.js';
+import Turno from '../../../../js/entity/Turno.js';
 
 describe('TurnosDao - Pruebas Unitarias con Stubs', () => {
     let turnosDao;
@@ -59,16 +59,16 @@ describe('TurnosDao - Pruebas Unitarias con Stubs', () => {
 
         it('debe mapear las propiedades correctamente', async () => {
             const mockData = [
-                { id: 1, nombre: 'Mañana' },
-                { id: 2, nombre: 'Tarde' }
+                { idTurnoExamen: 'uuid-1', nombreTurno: 'Mañana' },
+                { idTurnoExamen: 'uuid-2', nombreTurno: 'Tarde' }
             ];
             sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve(mockData) });
 
             const resultado = await turnosDao.obtenerTurnos();
 
-            expect(resultado[0].id).to.equal(1);
-            expect(resultado[0].nombre).to.equal('Mañana');
-            expect(resultado[1].id).to.equal(2);
+            expect(resultado[0].idTurnoExamen).to.equal('uuid-1');
+            expect(resultado[0].nombreTurno).to.equal('Mañana');
+            expect(resultado[1].idTurnoExamen).to.equal('uuid-2');
         });
 
         it('debe lanzar error cuando el servidor responde con error', async () => {
@@ -95,23 +95,23 @@ describe('TurnosDao - Pruebas Unitarias con Stubs', () => {
 
     describe('obtenerTurnoPorId con Stub', () => {
         it('debe retornar una instancia de Turno', async () => {
-            const mockData = { id: 1, nombre: 'Mañana', horario: '08:00' };
+            const mockData = { idTurnoExamen: 'uuid-1', nombreTurno: 'Mañana', horaInicio: '08:00' };
             sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve(mockData) });
 
-            const resultado = await turnosDao.obtenerTurnoPorId(1);
+            const resultado = await turnosDao.obtenerTurnoPorId('uuid-1');
 
             expect(resultado).to.be.instanceOf(Turno);
-            expect(resultado.id).to.equal(1);
-            expect(resultado.nombre).to.equal('Mañana');
+            expect(resultado.idTurnoExamen).to.equal('uuid-1');
+            expect(resultado.nombreTurno).to.equal('Mañana');
         });
 
         it('debe mapear todas las propiedades', async () => {
-            const mockData = { id: 1, nombre: 'Mañana', horario: '08:00' };
+            const mockData = { idTurnoExamen: 'uuid-1', nombreTurno: 'Mañana', horaInicio: '08:00' };
             sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve(mockData) });
 
-            const resultado = await turnosDao.obtenerTurnoPorId(1);
+            const resultado = await turnosDao.obtenerTurnoPorId('uuid-1');
 
-            expect(resultado.horario).to.equal('08:00');
+            expect(resultado.horaInicio).to.equal('08:00');
         });
 
         it('debe lanzar error cuando se llama sin ID', async () => {

@@ -1,5 +1,5 @@
-import { expect } from './lib/chai/index.js';
-import LocalStorageDao from '../../js/control/local_storage_dao.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import LocalStorageDao from '../../../../js/control/local_storage_dao.js';
 
 describe('LocalStorageDao - Pruebas Unitarias', () => {
     beforeEach(() => {
@@ -242,7 +242,7 @@ describe('LocalStorageDao - Pruebas Unitarias', () => {
         });
     });
 
-    describe('Integración - Flujo Completo', () => {
+    describe('Flujo Completo', () => {
         it('debe guardar turno, seleccionar y obtener', () => {
             LocalStorageDao.guardarTurno(1);
             LocalStorageDao.guardarTurno(2);

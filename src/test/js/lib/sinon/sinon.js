@@ -1,26 +1,6 @@
 const sinon = {
     stubs: new Map(),
 
-    stub(obj, method, implementation) {
-        const key = `${obj.constructor.name || 'window'}.${method}`;
-        const original = obj[method];
-        
-        if (!this.stubs.has(key)) {
-            this.stubs.set(key, { original, obj, method });
-        }
-
-        obj[method] = implementation;
-        obj[method].restore = () => {
-            if (this.stubs.has(key)) {
-                const { original: orig } = this.stubs.get(key);
-                obj[method] = orig;
-                this.stubs.delete(key);
-            }
-        };
-
-        return obj[method];
-    },
-
     stub: function(obj, method) {
         const key = `${obj.constructor.name || 'window'}.${method}`;
         const original = obj[method];

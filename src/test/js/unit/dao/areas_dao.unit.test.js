@@ -1,8 +1,8 @@
-import { expect } from './lib/chai/index.js';
-import sinon from './lib/sinon/sinon.js';
-import AreasConocimientoDao from '../../js/control/areas_dao.js';
-import AreaConocimiento from '../../js/entity/AreaConocimiento.js';
-import Tema from '../../js/entity/Tema.js';
+﻿import { expect } from '../../lib/chai/index.js';
+import sinon from '../../lib/sinon/sinon.js';
+import AreasConocimientoDao from '../../../../js/control/areas_dao.js';
+import AreaConocimiento from '../../../../js/entity/AreaConocimiento.js';
+import Tema from '../../../../js/entity/Tema.js';
 
 describe('AreasConocimientoDao - Pruebas Unitarias con Stubs', () => {
     let dao;
@@ -95,29 +95,25 @@ describe('AreasConocimientoDao - Pruebas Unitarias con Stubs', () => {
         });
 
         it('debe incluir los parámetros first y max en la URL', async () => {
-            sinon.stub(window, 'fetch').resolves({
-                status: 200,
-                json: () => Promise.resolve([])
-            });
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
 
             await dao.obtenerTodas(0, 100);
 
-            const url = window.fetch.firstCall.args[0];
-            expect(url).to.include('first=0');
-            expect(url).to.include('max=100');
+            expect(capturedUrl).to.include('first=0');
+            expect(capturedUrl).to.include('max=100');
         });
 
         it('debe usar first=0 y max=100 por defecto', async () => {
-            sinon.stub(window, 'fetch').resolves({
-                status: 200,
-                json: () => Promise.resolve([])
-            });
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
 
             await dao.obtenerTodas();
 
-            const url = window.fetch.firstCall.args[0];
-            expect(url).to.include('first=0');
-            expect(url).to.include('max=100');
+            expect(capturedUrl).to.include('first=0');
+            expect(capturedUrl).to.include('max=100');
         });
 
         it('debe retornar array vacío cuando no hay áreas', async () => {
@@ -189,15 +185,13 @@ describe('AreasConocimientoDao - Pruebas Unitarias con Stubs', () => {
         });
 
         it('debe llamar a la URL /areas/{idArea}/temas', async () => {
-            sinon.stub(window, 'fetch').resolves({
-                status: 200,
-                json: () => Promise.resolve([])
-            });
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
 
             await dao.obtenerTemasPorArea('uuid-area-1');
 
-            const url = window.fetch.firstCall.args[0];
-            expect(url).to.include('areas/uuid-area-1/temas');
+            expect(capturedUrl).to.include('areas/uuid-area-1/temas');
         });
 
         it('debe lanzar error cuando no se proporciona idArea', async () => {
@@ -250,27 +244,23 @@ describe('AreasConocimientoDao - Pruebas Unitarias con Stubs', () => {
         });
 
         it('debe llamar a /pruebas_admision/{idPrueba}/areas — no a /areas', async () => {
-            sinon.stub(window, 'fetch').resolves({
-                status: 200,
-                json: () => Promise.resolve([])
-            });
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
 
             await dao.obtenerAreasPorPrueba('uuid-prueba-1');
 
-            const url = window.fetch.firstCall.args[0];
-            expect(url).to.include('pruebas_admision/uuid-prueba-1/areas');
+            expect(capturedUrl).to.include('pruebas_admision/uuid-prueba-1/areas');
         });
 
         it('la URL de obtenerAreasPorPrueba no debe contener /areas/uuid-prueba-1', async () => {
-            sinon.stub(window, 'fetch').resolves({
-                status: 200,
-                json: () => Promise.resolve([])
-            });
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
 
             await dao.obtenerAreasPorPrueba('uuid-prueba-1');
 
-            const url = window.fetch.firstCall.args[0];
-            expect(url).to.not.match(/\/areas\/uuid-prueba-1/);
+            expect(capturedUrl).to.not.match(/\/areas\/uuid-prueba-1/);
         });
 
         it('debe lanzar error cuando no se proporciona idPrueba', async () => {

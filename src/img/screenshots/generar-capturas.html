@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de capturas PWA — Ingreso UES</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F9FAFB;
+            padding: 2rem;
+            color: #111827;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #1E3A8A; }
+        p.desc { color: #6B7280; font-size: 0.9rem; margin-bottom: 2rem; }
+        .capturas { display: flex; flex-direction: column; gap: 3rem; }
+        .captura-item { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.5rem; }
+        .captura-item h2 { font-size: 1rem; margin-bottom: 0.5rem; color: #374151; }
+        .captura-item p { font-size: 0.82rem; color: #9CA3AF; margin-bottom: 1rem; }
+        canvas { display: block; max-width: 100%; border: 1px solid #E5E7EB; border-radius: 6px; }
+        .btn-descargar {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.6rem 1.5rem;
+            background: #1E3A8A;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-descargar:hover { background: #1e2e5c; }
+        .instrucciones {
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+            color: #1E40AF;
+        }
+        .instrucciones ol { margin-top: 0.5rem; padding-left: 1.5rem; }
+        .instrucciones li { margin-bottom: 0.25rem; }
+        code { background: #DBEAFE; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.82rem; }
+    </style>
+</head>
+<body>
+
+    <h1>Generador de capturas PWA</h1>
+    <p class="desc">Genera las screenshots requeridas por el manifest PWA de Ingreso Universitario UES.</p>
+
+    <div class="instrucciones">
+        <strong>Instrucciones (solo se hace una vez):</strong>
+        <ol>
+            <li>Haz clic en cada botón <strong>"Descargar"</strong> para guardar las capturas.</li>
+            <li>Mueve los archivos descargados a la carpeta <code>src/img/screenshots/</code>.</li>
+            <li>Verifica que los nombres sean exactamente: <code>screenshot-wide.png</code> y <code>screenshot-narrow.png</code>.</li>
+            <li>Recarga la aplicación — Chrome leerá las nuevas capturas del manifest.</li>
+        </ol>
+    </div>
+
+    <div class="capturas">
+
+        <!-- WIDE 1280x720 -->
+        <div class="captura-item">
+            <h2>Captura Desktop — <code>form_factor: "wide"</code></h2>
+            <p>Dimensiones: 1280 × 720 px · Formato: PNG · Archivo: screenshot-wide.png</p>
+            <canvas id="canvas-wide" width="1280" height="720"></canvas>
+            <br>
+            <button class="btn-descargar" onclick="descargar('wide')">⬇ Descargar screenshot-wide.png</button>
+        </div>
+
+        <!-- NARROW 390x844 -->
+        <div class="captura-item">
+            <h2>Captura Móvil — <code>form_factor: "narrow"</code></h2>
+            <p>Dimensiones: 390 × 844 px · Formato: PNG · Archivo: screenshot-narrow.png</p>
+            <canvas id="canvas-narrow" width="390" height="844"></canvas>
+            <br>
+            <button class="btn-descargar" onclick="descargar('narrow')">⬇ Descargar screenshot-narrow.png</button>
+        </div>
+
+    </div>
+
+    <script>
+        /* ── Colores del sistema de diseño ── */
+        const C = {
+            primary:     '#1E3A8A',
+            primaryLight:'#3B82F6',
+            primaryDark: '#1e2e5c',
+            white:       '#FFFFFF',
+            bg:          '#F9FAFB',
+            surface:     '#FFFFFF',
+            border:      '#E5E7EB',
+            text:        '#111827',
+            textMuted:   '#6B7280',
+            secondary:   '#10B981'
+        };
+
+        /* ── Helpers de dibujo ── */
+        function rectRedondeado(ctx, x, y, w, h, r, color) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            if (color) { ctx.fillStyle = color; ctx.fill(); }
+        }
+
+        function gradiente(ctx, x1, y1, x2, y2, c1, c2) {
+            const g = ctx.createLinearGradient(x1, y1, x2, y2);
+            g.addColorStop(0, c1);
+            g.addColorStop(1, c2);
+            return g;
+        }
+
+        function dibujarLogoSVG(ctx, cx, cy, size) {
+            /* Reproduce el ícono de capas/libro (igual que offline.html) */
+            const s = size / 24;
+            ctx.save();
+            ctx.translate(cx - size / 2, cy - size / 2);
+            ctx.scale(s, s);
+            ctx.strokeStyle = C.white;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.fillStyle = 'none';
+
+            const paths = [
+                'M12 3L2 9l10 6 10-6-10-6z',
+                'M2 17l10 6 10-6',
+                'M2 13l10 6 10-6'
+            ];
+
+            paths.forEach(d => {
+                const path = new Path2D(d);
+                ctx.stroke(path);
+            });
+            ctx.restore();
+        }
+
+        function dibujarLogoCirculo(ctx, cx, cy, radio, iconSize) {
+            /* Fondo circular del logo */
+            ctx.beginPath();
+            ctx.arc(cx, cy, radio, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radio - 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fill();
+            dibujarLogoSVG(ctx, cx, cy, iconSize);
+        }
+
+        /* ════════════════════════════════════════════
+           CAPTURA WIDE  1280 × 720
+        ════════════════════════════════════════════ */
+        function dibujarWide() {
+            const cv = document.getElementById('canvas-wide');
+            const ctx = cv.getContext('2d');
+            const W = 1280, H = 720;
+
+            /* Fondo general */
+            ctx.fillStyle = C.bg;
+            ctx.fillRect(0, 0, W, H);
+
+            /* ── Header ── */
+            const hdrGrad = gradiente(ctx, 0, 0, W, 0, C.primary, C.primary);
+            ctx.fillStyle = hdrGrad;
+            ctx.fillRect(0, 0, W, 64);
+
+            /* Logo en header */
+            dibujarLogoCirculo(ctx, 40, 32, 20, 24);
+
+            /* Título header */
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('Ingreso Universitario', 72, 40);
+
+            /* Nav links header */
+            ctx.font = '14px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            const navLinks = ['Inicio', 'Carreras', 'Registro', 'Procesos', 'Áreas', 'Resultado'];
+            let nx = 820;
+            navLinks.forEach(link => {
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fillText(link, nx, 38);
+                nx += ctx.measureText(link).width + 28;
+            });
+
+            /* ── Hero section ── */
+            const heroY = 80, heroH = 240, heroX = 40, heroW = W - 80;
+            const heroGrad = gradiente(ctx, heroX, heroY, heroX + heroW, heroY + heroH, C.primary, C.primaryLight);
+            ctx.fillStyle = heroGrad;
+            rectRedondeado(ctx, heroX, heroY, heroW, heroH, 12, null);
+            ctx.fill();
+
+            /* Logo grande en hero */
+            dibujarLogoCirculo(ctx, heroX + 110, heroY + heroH / 2, 55, 56);
+
+            /* Textos del hero */
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('Sistema de Ingreso Universitario', heroX + 200, heroY + 85);
+
+            ctx.font = '16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText('Bienvenido al proceso oficial de admisión. Registra tus datos,', heroX + 200, heroY + 120);
+            ctx.fillText('selecciona tu carrera y rinde la prueba en línea.', heroX + 200, heroY + 142);
+
+            /* Botón "Comenzar inscripción" */
+            rectRedondeado(ctx, heroX + 200, heroY + 165, 240, 44, 8, C.secondary);
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('Comenzar inscripción', heroX + 238, heroY + 192);
+
+            /* ── Sección "¿Cómo funciona?" ── */
+            ctx.fillStyle = C.primaryDark;
+            ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('¿Cómo funciona el proceso?', W / 2 - 160, 370);
+
+            /* ── Cards de pasos ── */
+            const pasos = [
+                { num: '1', titulo: 'Regístrate',       sub: 'Completa tu perfil' },
+                { num: '2', titulo: 'Elige carrera',    sub: 'Oferta disponible' },
+                { num: '3', titulo: 'Inscríbete',       sub: 'Confirma inscripción' },
+                { num: '4', titulo: 'Rinde examen',     sub: 'Prueba en línea' },
+                { num: '5', titulo: 'Resultados',       sub: 'Consulta tu puntaje' }
+            ];
+
+            const cardW = 200, cardH = 180, cardGap = 22;
+            const totalW = pasos.length * cardW + (pasos.length - 1) * cardGap;
+            let cx = (W - totalW) / 2;
+            const cardY = 395;
+
+            pasos.forEach(paso => {
+                /* Sombra */
+                ctx.shadowColor = 'rgba(0,0,0,0.08)';
+                ctx.shadowBlur = 12;
+                ctx.shadowOffsetY = 4;
+                rectRedondeado(ctx, cx, cardY, cardW, cardH, 10, C.surface);
+                ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+                /* Borde */
+                ctx.strokeStyle = C.border;
+                ctx.lineWidth = 1;
+                rectRedondeado(ctx, cx, cardY, cardW, cardH, 10);
+                ctx.stroke();
+
+                /* Número */
+                ctx.beginPath();
+                ctx.arc(cx + cardW / 2, cardY + 42, 22, 0, Math.PI * 2);
+                ctx.fillStyle = C.primary;
+                ctx.fill();
+                ctx.fillStyle = C.white;
+                ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(paso.num, cx + cardW / 2, cardY + 49);
+
+                /* Título */
+                ctx.fillStyle = C.primaryDark;
+                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.fillText(paso.titulo, cx + cardW / 2, cardY + 95);
+
+                /* Subtítulo */
+                ctx.fillStyle = C.textMuted;
+                ctx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.fillText(paso.sub, cx + cardW / 2, cardY + 116);
+
+                ctx.textAlign = 'left';
+                cx += cardW + cardGap;
+            });
+
+            /* ── Footer ── */
+            ctx.fillStyle = C.primaryDark;
+            ctx.fillRect(0, H - 44, W, 44);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Universidad de El Salvador — Sistema de Ingreso', W / 2, H - 16);
+            ctx.textAlign = 'left';
+        }
+
+        /* ════════════════════════════════════════════
+           CAPTURA NARROW  390 × 844
+        ════════════════════════════════════════════ */
+        function dibujarNarrow() {
+            const cv = document.getElementById('canvas-narrow');
+            const ctx = cv.getContext('2d');
+            const W = 390, H = 844;
+
+            /* Fondo */
+            ctx.fillStyle = C.bg;
+            ctx.fillRect(0, 0, W, H);
+
+            /* ── Header ── */
+            ctx.fillStyle = C.primary;
+            ctx.fillRect(0, 0, W, 56);
+
+            dibujarLogoCirculo(ctx, 30, 28, 16, 20);
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('Ingreso Universitario', 56, 33);
+
+            /* ── Hero ── */
+            const heroGrad = gradiente(ctx, 0, 64, 0, 340, C.primary, C.primaryLight);
+            ctx.fillStyle = heroGrad;
+            rectRedondeado(ctx, 16, 72, W - 32, 248, 10, null);
+            ctx.fill();
+
+            /* Logo centrado */
+            dibujarLogoCirculo(ctx, W / 2, 130, 38, 40);
+
+            /* Título */
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 19px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Sistema de Ingreso', W / 2, 195);
+            ctx.fillText('Universitario', W / 2, 218);
+
+            /* Subtítulo */
+            ctx.font = '13px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText('Proceso oficial de admisión UES', W / 2, 244);
+
+            /* Botón */
+            rectRedondeado(ctx, W / 2 - 110, 262, 220, 40, 8, C.secondary);
+            ctx.fillStyle = C.white;
+            ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillText('Comenzar inscripción', W / 2, 288);
+            ctx.textAlign = 'left';
+
+            /* ── Cards apiladas ── */
+            const pasosMobile = [
+                { num: '1', titulo: 'Regístrate',     sub: 'Completa tu perfil' },
+                { num: '2', titulo: 'Elige carrera',  sub: 'Selecciona tu opción' },
+                { num: '3', titulo: 'Inscríbete',     sub: 'Confirma inscripción' },
+                { num: '4', titulo: 'Rinde examen',   sub: 'Prueba en línea' },
+            ];
+
+            let cardY = 342;
+            pasosMobile.forEach(paso => {
+                ctx.shadowColor = 'rgba(0,0,0,0.07)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 3;
+                rectRedondeado(ctx, 16, cardY, W - 32, 100, 8, C.surface);
+                ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+                ctx.strokeStyle = C.border;
+                ctx.lineWidth = 1;
+                rectRedondeado(ctx, 16, cardY, W - 32, 100, 8);
+                ctx.stroke();
+
+                /* Número */
+                ctx.beginPath();
+                ctx.arc(58, cardY + 50, 20, 0, Math.PI * 2);
+                ctx.fillStyle = C.primary;
+                ctx.fill();
+                ctx.fillStyle = C.white;
+                ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(paso.num, 58, cardY + 56);
+                ctx.textAlign = 'left';
+
+                /* Texto */
+                ctx.fillStyle = C.primaryDark;
+                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.fillText(paso.titulo, 92, cardY + 43);
+
+                ctx.fillStyle = C.textMuted;
+                ctx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+                ctx.fillText(paso.sub, 92, cardY + 63);
+
+                cardY += 112;
+            });
+
+            /* Footer */
+            ctx.fillStyle = C.primaryDark;
+            ctx.fillRect(0, H - 40, W, 40);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Universidad de El Salvador', W / 2, H - 14);
+            ctx.textAlign = 'left';
+        }
+
+        /* ── Descarga ── */
+        function descargar(tipo) {
+            const id = tipo === 'wide' ? 'canvas-wide' : 'canvas-narrow';
+            const nombre = `screenshot-${tipo}.png`;
+            const canvas = document.getElementById(id);
+            const link = document.createElement('a');
+            link.download = nombre;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        /* Renderizar al cargar */
+        dibujarWide();
+        dibujarNarrow();
+    </script>
+
+</body>
+</html>

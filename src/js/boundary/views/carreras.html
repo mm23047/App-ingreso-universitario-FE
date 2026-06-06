@@ -1,27 +1,18 @@
 <!-- ============================================================
-     VISTA: SELECCIÓN DE CARRERA  (#/carreras)
+     VISTA: CARRERAS DISPONIBLES  (#/carreras)
      Fragmento inyectado por el router en <main id="app-content">.
      Controller: CarrerasController
      DAO:        CarrerasDao  →  GET /carreras
      Campos: idCarrera (String), nombreCatalogoCarrera (String)
+     Vista informativa: solo muestra el catálogo, sin selección ni flujos.
      ============================================================ -->
 
 <style>
     .carrera-card {
-        cursor: pointer;
         border: 2px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--space-xl);
         background: var(--color-surface);
-        transition: border-color var(--transition), box-shadow var(--transition);
-    }
-    .carrera-card:hover {
-        border-color: var(--color-primary-light);
-        box-shadow: var(--shadow-md);
-    }
-    .carrera-card.seleccionada {
-        border-color: var(--color-primary);
-        background: #EFF6FF;
     }
     .carrera-codigo {
         font-size: .8rem;
@@ -30,25 +21,19 @@
     }
 </style>
 
-<h2 class="mb-md" style="color: var(--color-primary-dark);">Selecciona tu carrera</h2>
-<p class="text-muted mb-lg">Elige la carrera universitaria a la que deseas postularte.</p>
+<h2 class="mb-md" style="color: var(--color-primary-dark);">Carreras disponibles</h2>
+<p class="text-muted mb-lg">Estas son las carreras disponibles en el programa de ingreso universitario.</p>
 
 <div id="lista-carreras" class="grid-cards">
     <p class="text-muted text-center">Cargando carreras...</p>
 </div>
 
-<div class="mt-lg" style="display: flex; justify-content: flex-end;">
-    <button id="btn-continuar" class="btn btn-primary" disabled>Continuar →</button>
-</div>
-
 <script type="module">
     // Rutas relativas a index.html (base del documento), no a esta vista
     import CarrerasController from './js/control/carreras_controller.js';
-    import { navigate } from './js/infra/router.js';
 
     const controller = new CarrerasController();
     const lista      = document.getElementById('lista-carreras');
-    const btnCont    = document.getElementById('btn-continuar');
 
     const renderCarreras = (carreras) => {
         if (!carreras || carreras.length === 0) {
@@ -56,20 +41,11 @@
             return;
         }
         lista.innerHTML = carreras.map(c => `
-            <div class="carrera-card" data-id="${c.idCarrera}">
+            <div class="carrera-card">
                 <p class="carrera-codigo">${c.idCarrera}</p>
                 <h3>${c.nombreCatalogoCarrera}</h3>
             </div>
         `).join('');
-
-        lista.querySelectorAll('.carrera-card').forEach(card => {
-            card.addEventListener('click', () => {
-                lista.querySelectorAll('.carrera-card').forEach(c => c.classList.remove('seleccionada'));
-                card.classList.add('seleccionada');
-                controller.seleccionarCarrera(card.dataset.id);
-                btnCont.disabled = false;
-            });
-        });
     };
 
     const renderError = (err) => {
@@ -78,8 +54,6 @@
             ? `<p class="text-danger text-center">⚠ Backend no disponible — comprueba que el servidor esté encendido.</p>`
             : `<p class="text-danger text-center">Error al cargar las carreras: ${err.message}</p>`;
     };
-
-    btnCont.addEventListener('click', () => navigate('/registro'));
 
     controller.cargarTodas().then(renderCarreras).catch(renderError);
 </script>
