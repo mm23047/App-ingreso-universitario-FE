@@ -164,6 +164,9 @@
                     <dt>Clave de examen</dt>
                     <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>
                 </dl>
+                
+                ${ctrl.generarRecomendacionesHtml(ex)}
+                
             </div>
         `;
     };

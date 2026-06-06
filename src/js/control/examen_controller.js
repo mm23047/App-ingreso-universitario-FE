@@ -152,6 +152,69 @@ class ExamenController {
             return [];
         }
     }
+
+    // =================================================================
+    // NUEVO MÉTODO AGREGADO AQUÍ (Lógica UI delegada al Controlador)
+    // =================================================================
+    
+    /**
+     * Genera el HTML de la caja de recomendaciones según el estado del examen o inscripción.
+     * @param {Object} examen - Objeto de datos del examen y admisión
+     * @returns {string} Fragmento HTML
+     */
+    generarRecomendacionesHtml(examen) {
+        // Diccionario de configuración centralizado
+        const CONFIG = {
+            ADMITIDO: {
+                cls: 'recom-admitido', icon: '🎓', subtitulo: '¡Felicitaciones! Has sido admitido',
+                pasos: [
+                    'Presenta tus documentos originales en la Oficina Central de Registros.',
+                    'Realiza el pago de matrícula en Colecturía.',
+                    'Consulta el sistema en línea para confirmar tu aula y sección.'
+                ]
+            },
+            PENDIENTE: {
+                cls: 'recom-pendiente', icon: '⏳', subtitulo: 'Tu resultado está siendo procesado',
+                pasos: [
+                    'El sistema está calificando tu examen; los puntajes se actualizan periódicamente.',
+                    'Vuelve a consultar esta página en 24–48 horas hábiles.',
+                    'No necesitas realizar ningún trámite adicional mientras esté pendiente.'
+                ]
+            },
+            NO_ADMITIDO: {
+                cls: 'recom-no-admitido', icon: '📋', subtitulo: 'Opciones disponibles para ti',
+                pasos: [
+                    'Infórmate sobre la próxima convocatoria de admisión.',
+                    'Explora otras carreras donde tu puntaje podría ser competitivo.',
+                    'Acude al servicio de orientación vocacional de la universidad.'
+                ]
+            }
+        };
+
+        // Lógica para determinar el estado: Prioriza 'estadoAdmision', si es null, busca en la inscripción
+        let estadoClave = examen.estadoAdmision; 
+        
+        if (!estadoClave && examen.inscripcionesPrueba?.estado === 'INSCRITO') {
+            estadoClave = 'INSCRITO';
+        }
+
+        const config = CONFIG[estadoClave];
+        if (!config) return ''; // Si el estado no coincide con ninguno, no inyecta nada
+
+        const itemsLista = config.pasos.map(p => `<li>${p}</li>`).join('');
+        
+        return `
+            <div class="recom-box ${config.cls}">
+                <div class="recom-titulo">
+                    <span>${config.icon}</span>
+                    <span>Recomendaciones y siguientes pasos</span>
+                </div>
+                <p class="recom-subtitulo">${config.subtitulo}</p>
+                <ol class="recom-lista">${itemsLista}</ol>
+            </div>
+        `;
+    }
+
 }
 
 export default ExamenController;

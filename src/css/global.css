@@ -235,3 +235,44 @@ input:focus, select:focus, textarea:focus {
     justify-content: center;
 }
 #loading-overlay.active { display: flex; }
+
+
+/* ── Cuadros de Recomendaciones (UI/UX Parcial) ── */
+.recom-box {
+    margin-top: var(--space-lg);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    border-left: 4px solid;
+}
+.recom-titulo {
+    display: flex; align-items: center; gap: var(--space-sm);
+    font-size: .72rem; font-weight: 700;
+    letter-spacing: .07em; text-transform: uppercase;
+    margin-bottom: var(--space-xs);
+}
+.recom-subtitulo {
+    font-weight: 600; font-size: .95rem; margin: 0 0 var(--space-sm);
+}
+.recom-lista {
+    margin: 0; padding-left: var(--space-lg);
+    font-size: .875rem; line-height: 1.75;
+}
+.recom-lista li + li { margin-top: var(--space-xs); }
+
+/* Variantes de Color por Estado */
+.recom-admitido { background:#EFF6FF; border-color:var(--color-primary-light); color:var(--color-primary-dark); }
+.recom-admitido .recom-titulo { color:var(--color-primary); }
+.recom-admitido .recom-subtitulo { color:var(--color-secondary); }
+
+.recom-pendiente { background:#FFFBEB; border-color:var(--color-warning); color:#78350F; }
+.recom-pendiente .recom-titulo { color:#92400E; }
+.recom-pendiente .recom-subtitulo { color:#92400E; }
+
+.recom-no-admitido { background:#FEF2F2; border-color:var(--color-danger); color:#7F1D1D; }
+.recom-no-admitido .recom-titulo { color:var(--color-danger); }
+.recom-no-admitido .recom-subtitulo { color:#991B1B; }
+
+/* NUEVO: Estado Inscrito (Celeste Info) */
+.recom-inscrito { background:#F0F9FF; border-color:#0EA5E9; color:#0369A1; }
+.recom-inscrito .recom-titulo { color:#0284C7; }
+.recom-inscrito .recom-subtitulo { color:#0C4A6E; }
