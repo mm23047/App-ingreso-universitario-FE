@@ -186,8 +186,13 @@ class ExamenController {
                 const inscripciones = await this.aspirantesDao.obtenerInscripciones(criterio);
                 if (inscripciones.length) return { tipo: 'inscripciones', datos: inscripciones };
 
-                // Si es un UUID válido pero no tiene nada, asumimos que solo está registrado
-                return { tipo: 'solo_registrado', datos: { nombres: 'Aspirante', apellidos: '' } };
+                // Verificar que el aspirante realmente exista antes de mostrar "solo registrado"
+                try {
+                    const aspirante = await this.aspirantesDao.obtenerPorId(criterio);
+                    return { tipo: 'solo_registrado', datos: aspirante };
+                } catch {
+                    return { tipo: 'nada', datos: [] };
+                }
             }
 
             // ==========================================
@@ -208,8 +213,7 @@ class ExamenController {
             // Si no hay exámenes, verificamos si el aspirante existe en el sistema
             const queryParamAspirante = paramName === 'correo' ? `correo=${encodeURIComponent(criterio)}` : `dui=${encodeURIComponent(criterio)}`;
             
-            // CORREGIDO: Se quitó el "this.this" duplicado que provocaba error sintáctico
-            const resAspirante = await fetch(`${this.aspirantesDao.BASE_URL}aspirantes?${queryParamAspirante}`);
+            const resAspirante = await fetch(`${this.aspirantesDao.BASE_URL}?${queryParamAspirante}`);
             
             if (resAspirante.ok) {
                 const aspirantes = await resAspirante.json();
