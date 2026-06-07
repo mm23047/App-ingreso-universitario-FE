@@ -52,7 +52,7 @@ describe('AspirantesController — Integración con backend', () => {
 
     describe('registrar() — Controller → DAO → backend → store', () => {
 
-        it('debe guardar un Aspirante en store.aspirante cuando el backend responde 201', async function () {
+        it('debe guardar Aspirante en store.aspirante y dejar store.loading en false cuando el backend responde 201', async function () {
             this.timeout(5000);
             const datos = generarDatos();
 
@@ -64,9 +64,10 @@ describe('AspirantesController — Integración con backend', () => {
             expect(store.aspirante.id).to.be.a('string').and.not.equal('');
             expect(store.aspirante.dui).to.equal(datos.dui);
             expect(store.aspirante.usaSillaRuedas).to.be.true;
+            expect(store.loading).to.be.false;
         });
 
-        it('debe propagar err.tipo del backend y dejar store.aspirante en null cuando el DUI ya existe (409)', async function () {
+        it('debe propagar err.tipo del backend, dejar store.aspirante null y store.loading false cuando el DUI ya existe (409)', async function () {
             this.timeout(10000);
             const datos = generarDatos('dup');
 
@@ -84,20 +85,10 @@ describe('AspirantesController — Integración con backend', () => {
             }
 
             expect(errorDuplicado, 'La segunda llamada con DUI duplicado debe ser rechazada').to.exist;
-            expect(errorDuplicado.httpStatus, 'Error de red en segunda llamada — ¿cayó el servidor?').to.be.a('number');
-            expect(errorDuplicado.httpStatus).to.equal(409);
+            expect(errorDuplicado.httpStatus, 'Error de red en segunda llamada — ¿cayó el servidor?').to.equal(409);
             expect(TIPOS_NEGOCIO_CONOCIDOS).to.include(errorDuplicado.tipo);
             expect(errorDuplicado.mensajeNegocio).to.be.a('string').and.not.equal('');
             expect(store.aspirante).to.be.null;
-        });
-
-        it('debe mantener store.loading = false tras el registro, independientemente del resultado', async function () {
-            this.timeout(5000);
-            const datos = generarDatos('loading');
-
-            const resultado = await ctrl.registrar(datos);
-            idsCreados.push(resultado.id); // registrar para limpieza
-
             expect(store.loading).to.be.false;
         });
     });
