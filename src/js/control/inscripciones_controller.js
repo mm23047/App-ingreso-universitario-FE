@@ -1,7 +1,8 @@
-import AspirantesDao from './aspirantes_dao.js';
+import AspirantesDao      from './aspirantes_dao.js';
 import CarrerasElegidaDao from './carreras_elegida_dao.js';
 import PruebasAdmisionDao from './pruebas_admision_dao.js';
-import { store } from '../infra/app_state.js';
+import { store }          from '../infra/app_state.js';
+import { notificar }      from '../infra/notificaciones.js';
 
 class InscripcionesController {
     constructor() {
@@ -23,12 +24,12 @@ class InscripcionesController {
 
         if (!aspiranteId) {
             const msg = 'Debe registrarse antes de inscribirse';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
         if (!pruebaAdmisionId) {
             const msg = 'No hay prueba de admisión activa disponible';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
 
@@ -47,7 +48,7 @@ class InscripcionesController {
                 store.carrerasElegidas = [elegida];
             }
 
-            document.querySelector('app-toast')?.show('Inscripción realizada con éxito', 3000, 'success');
+            notificar('Inscripción realizada con éxito', 3000, 'success');
             return inscripcion;
 
         } catch (error) {
@@ -55,7 +56,7 @@ class InscripcionesController {
             const msg = error.message.includes('409')
                 ? 'Ya se encuentra inscrito en esta prueba'
                 : `Error al inscribir: ${error.message}`;
-            document.querySelector('app-toast')?.show(msg, 5000, 'error');
+            notificar(msg, 5000, 'error');
             throw error;
         } finally {
             store.loading = false;
@@ -83,7 +84,7 @@ class InscripcionesController {
             const prueba  = pruebas?.[0] ?? null;
 
             if (!prueba) {
-                document.querySelector('app-toast')?.show(
+                notificar(
                     'No hay proceso de admisión activo. Tu perfil fue creado, pero no se pudo generar inscripción.',
                     6000, 'warning'
                 );
@@ -120,7 +121,7 @@ class InscripcionesController {
             const msg = error.message.includes('409')
                 ? 'Ya tienes una inscripción activa para este proceso'
                 : `Error al completar el registro: ${error.message}`;
-            document.querySelector('app-toast')?.show(msg, 5000, 'error');
+            notificar(msg, 5000, 'error');
             throw error;
         } finally {
             store.loading = false;

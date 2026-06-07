@@ -275,14 +275,19 @@
 <div id="ps-grid"></div>
 
 <script type="module">
-    import DefaultDao   from './js/control/default_dao.js';
-    import { store }    from './js/infra/app_state.js';
-    import { navigate } from './js/infra/router.js';
+    import ProcesosController from './js/control/procesos_controller.js';
+    import { store }          from './js/infra/app_state.js';
+    import { navigate }       from './js/infra/router.js';
     import './js/boundary/components/proceso-card.js';
 
-    const BASE     = new DefaultDao().getBaseUrl();
-    const grid     = document.getElementById('ps-grid');
-    const buscador = document.getElementById('ps-buscador');
+    const ctrl      = new ProcesosController();
+    const grid      = document.getElementById('ps-grid');
+    const buscador  = document.getElementById('ps-buscador');
+    const contador  = document.getElementById('ps-contador');
+    const banner    = document.getElementById('ps-banner');
+
+    let _todos      = [];
+    let _anioActivo = null;
 
     grid.addEventListener('proceso-seleccionado', (e) => {
         const p = e.detail.proceso;
@@ -294,110 +299,24 @@
         };
         navigate('/areas');
     });
-    const contador = document.getElementById('ps-contador');
-    const banner   = document.getElementById('ps-banner');
-
-    let _todos        = [];   // cache completo de procesos ensamblados (carga inicial)
-    let _anioActivo   = null; // null = mostrar todos los años
-    let _turnosBrutos    = [];   // turnos crudos para reensamblaje tras búsqueda backend
-    let _dispsBrutos     = [];   // disponibilidades crudas para reensamblaje
-    let _abortController = null; // cancela peticiones en vuelo al llegar una nueva
 
     /* ══════════════════════════════════════════════════
-       CARGA — 3 endpoints en paralelo con degradación
+       CARGA
     ══════════════════════════════════════════════════ */
     async function cargarDatos() {
         mostrarSkeleton();
-
-        const [resPruebas, resTurnos, resDisp] = await Promise.allSettled([
-            fetch(`${BASE}pruebas_admision?first=0&max=200`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
-            fetch(`${BASE}turnos`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
-            fetch(`${BASE}aulas_turnos/disponibilidad`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
-        ]);
-
-        // Procesos es obligatorio — sin él no hay nada que mostrar
-        if (resPruebas.status === 'rejected') {
-            mostrarError('No se pudieron cargar los procesos. Verifica que el servidor esté encendido en el puerto 9080.');
-            return;
+        try {
+            const { procesos, avisos } = await ctrl.cargar();
+            if (avisos.length) {
+                banner.style.display = 'block';
+                banner.textContent = `⚠ Datos incompletos: no se pudieron cargar ${avisos.join(' y ')}.`;
+            }
+            _todos = procesos;
+            generarFiltrosAnio(_todos);
+            renderizar(_todos);
+        } catch (err) {
+            mostrarError(err.message);
         }
-
-        // Turnos y disponibilidad son enriquecimiento — degradan con aviso
-        const avisos = [];
-        if (resTurnos.status === 'rejected') avisos.push('fechas y horarios (turnos no disponibles)');
-        if (resDisp.status   === 'rejected') avisos.push('sedes (disponibilidad de aulas no disponible)');
-        if (avisos.length) {
-            banner.style.display = 'block';
-            banner.textContent = `⚠ Datos incompletos: no se pudieron cargar ${avisos.join(' y ')}.`;
-        }
-
-        const pruebas = resPruebas.value ?? [];
-        const turnos  = resTurnos.status === 'fulfilled' ? (resTurnos.value ?? []) : [];
-        const disps   = resDisp.status   === 'fulfilled' ? (resDisp.value   ?? []) : [];
-
-        _turnosBrutos = turnos;
-        _dispsBrutos  = disps;
-        _todos = ensamblar(pruebas, turnos, disps);
-        generarFiltrosAnio(_todos);
-        renderizar(_todos);
-    }
-
-    /* ══════════════════════════════════════════════════
-       ENSAMBLAJE — join cliente por IDs
-    ══════════════════════════════════════════════════ */
-    function ensamblar(pruebas, turnos, disps) {
-        // Índice: idPruebaAdmision → turnos[]
-        const turnosPorPrueba = {};
-        for (const t of turnos) {
-            const pid = t.pruebaAdmision?.idPruebaAdmision;
-            if (pid) (turnosPorPrueba[pid] ??= []).push(t);
-        }
-
-        // Índice: idTurnoExamen → Set<codigoAulaApi>
-        const sedesPorTurno = {};
-        for (const d of disps) {
-            const tid  = d.turnoExamen?.idTurnoExamen
-                      ?? d.idDisponibilidadAulaTurno?.idTurno;
-            const sede = d.aula?.codigoAulaApi;
-            if (tid && sede) (sedesPorTurno[tid] ??= new Set()).add(sede);
-        }
-
-        return pruebas.map(p => {
-            const turnosP = turnosPorPrueba[p.idPruebaAdmision] ?? [];
-
-            // Fechas ordenadas → inicio = primera, fin = última
-            const fechas = turnosP.map(t => t.fecha).filter(Boolean).sort();
-
-            // Jornadas únicas (nombreTurno)
-            const jornadas = [...new Set(turnosP.map(t => t.nombreTurno).filter(Boolean))];
-
-            // Horarios únicos "HH:MM – HH:MM"
-            const horarios = [...new Set(
-                turnosP
-                    .filter(t => t.horaInicio && t.horaFin)
-                    .map(t => `${t.horaInicio.slice(0,5)} – ${t.horaFin.slice(0,5)}`)
-            )];
-
-            // Sedes únicas de todos los turnos de este proceso
-            const sedes = new Set();
-            turnosP.forEach(t =>
-                (sedesPorTurno[t.idTurnoExamen] ?? new Set()).forEach(s => sedes.add(s))
-            );
-
-            return {
-                idPruebaAdmision: p.idPruebaAdmision,
-                nombrePrueba:     p.nombrePrueba ?? '—',
-                anio:             p.anio         ?? '—',
-                activa:           !!p.activa,
-                fechaInicio:      fechas[0]              ?? null,
-                fechaFin:         fechas.at(-1)          ?? null,
-                jornadas,
-                horarios,
-                sedes: [...sedes],
-            };
-        });
     }
 
     /* ══════════════════════════════════════════════════
@@ -418,10 +337,8 @@
             return;
         }
 
-        // Agrupar por año (desc) y construir timeline
-        const grupos = agruparPorAnio(lista);
+        const grupos = ctrl.agruparPorAnio(lista);
 
-        // Wrapper con línea vertical
         const root = document.createElement('div');
         root.className = 'ps-tl-root';
 
@@ -434,23 +351,19 @@
             const grupo = document.createElement('div');
             grupo.className = 'ps-tl-grupo';
 
-            // Nodo-año en la línea de tiempo
             const nodo = document.createElement('div');
             nodo.className = 'ps-tl-nodo';
             nodo.setAttribute('aria-hidden', 'true');
             nodo.textContent = anio;
 
-            // Columna de contenido
             const contenido = document.createElement('div');
             contenido.className = 'ps-tl-contenido';
 
-            // Título del grupo (AÑO ACADÉMICO · N procesos)
             const titulo = document.createElement('div');
             titulo.className = 'ps-tl-anio-titulo';
             titulo.textContent = `Año académico ${anio} · ${procesos.length} proceso${procesos.length !== 1 ? 's' : ''}`;
             contenido.appendChild(titulo);
 
-            // Sub-grid de tarjetas
             const subGrid = document.createElement('div');
             subGrid.className = 'ps-grid';
             subGrid.setAttribute('role', 'list');
@@ -479,12 +392,11 @@
     const filtrosAnioEl = document.getElementById('ps-filtros-anio');
 
     function generarFiltrosAnio(todos) {
-        // Años únicos en orden descendente
         const anios = [...new Set(todos.map(p => p.anio))]
             .filter(a => a && a !== '—')
             .sort((a, b) => Number(b) - Number(a));
 
-        if (anios.length <= 1) return; // No vale la pena mostrar filtros con 0 o 1 año
+        if (anios.length <= 1) return;
 
         filtrosAnioEl.style.display = 'block';
         filtrosAnioEl.innerHTML = '';
@@ -497,14 +409,11 @@
         lbl.textContent = 'Año:';
         wrap.appendChild(lbl);
 
-        // Botón "Todos"
         const btnTodos = crearBtnFiltro('Todos', null);
         btnTodos.classList.add('activo');
         wrap.appendChild(btnTodos);
 
-        // Un botón por cada año
         anios.forEach(anio => wrap.appendChild(crearBtnFiltro(String(anio), anio)));
-
         filtrosAnioEl.appendChild(wrap);
     }
 
@@ -514,7 +423,6 @@
         btn.textContent = label;
         btn.addEventListener('click', () => {
             _anioActivo = valor;
-            // Actualizar estado visual de todos los botones
             filtrosAnioEl.querySelectorAll('.ps-filtro-btn')
                 .forEach(b => b.classList.remove('activo'));
             btn.classList.add('activo');
@@ -523,18 +431,15 @@
         return btn;
     }
 
-    /* ── Combina filtro texto (backend) + filtro año (cliente) y renderiza ── */
+    /* ══════════════════════════════════════════════════
+       BÚSQUEDA — debounce 300 ms
+    ══════════════════════════════════════════════════ */
     async function aplicarFiltros() {
         const q = buscador.value.trim();
         let base;
         if (q) {
-            if (_abortController) _abortController.abort();
-            _abortController = new AbortController();
             try {
-                const url = `${BASE}pruebas_admision?first=0&max=200&buscar=${encodeURIComponent(q)}`;
-                const pruebas = await fetch(url, { signal: _abortController.signal })
-                    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`));
-                base = ensamblar(pruebas, _turnosBrutos, _dispsBrutos);
+                base = await ctrl.buscar(q);
             } catch (e) {
                 if (e?.name === 'AbortError') return;
                 base = [];
@@ -548,22 +453,6 @@
         renderizar(resultado);
     }
 
-    /* ── Agrupa lista por año en un Map ordenado desc ── */
-    function agruparPorAnio(lista) {
-        const mapa = new Map();
-        // Ordenar desc por año antes de agrupar
-        const ordenada = [...lista].sort((a, b) => Number(b.anio) - Number(a.anio));
-        for (const p of ordenada) {
-            const k = p.anio ?? '—';
-            if (!mapa.has(k)) mapa.set(k, []);
-            mapa.get(k).push(p);
-        }
-        return mapa; // Map<año, proceso[]> en orden desc
-    }
-
-    /* ══════════════════════════════════════════════════
-       BÚSQUEDA — fetch al backend con debounce 300 ms
-    ══════════════════════════════════════════════════ */
     let _debounce;
     buscador.addEventListener('input', () => {
         clearTimeout(_debounce);

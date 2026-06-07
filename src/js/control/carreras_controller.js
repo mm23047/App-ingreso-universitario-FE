@@ -1,5 +1,6 @@
-import CarrerasDao from './carreras_dao.js';
-import { store } from '../infra/app_state.js';
+import CarrerasDao  from './carreras_dao.js';
+import { store }    from '../infra/app_state.js';
+import { notificar } from '../infra/notificaciones.js';
 
 class CarrerasController {
     constructor() {
@@ -14,7 +15,7 @@ class CarrerasController {
             return carreras;
         } catch (error) {
             console.error('Error al cargar carreras:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar carreras: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -26,11 +27,11 @@ class CarrerasController {
     seleccionarCarrera(idCarrera) {
         const carrera = store.carreras.find(c => c.idCarrera === idCarrera);
         if (!carrera) {
-            document.querySelector('app-toast')?.show('Carrera no encontrada', 3000, 'warning');
+            notificar('Carrera no encontrada', 3000, 'warning');
             return null;
         }
         store.carreraSeleccionada = carrera;
-        document.querySelector('app-toast')?.show(
+        notificar(
             `Carrera seleccionada: ${carrera.nombreCatalogoCarrera}`, 2500, 'success'
         );
         return carrera;

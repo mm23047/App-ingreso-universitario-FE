@@ -245,10 +245,6 @@
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
         const dui = document.getElementById('dui').value.trim();
-        if (!/^\d{8}-\d$/.test(dui)) {
-            document.querySelector('app-toast')?.show('El DUI debe tener el formato 00000000-0.', 4000, 'warning');
-            return;
-        }
         if (!document.getElementById('c1').value) {
             document.querySelector('app-toast')?.show('Selecciona al menos una carrera como primera preferencia.', 4000, 'warning');
             return;

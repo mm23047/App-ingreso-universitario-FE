@@ -1,9 +1,10 @@
 import ExamenRealizadoDao from './examen_realizado_dao.js';
 import RespuestaExamenDao from './respuesta_examen_dao.js';
-import PreguntasDao from './preguntas_dao.js';
-import AspirantesDao from './aspirantes_dao.js';
-import { store } from '../infra/app_state.js';
-import { navigate } from '../infra/router.js';
+import PreguntasDao       from './preguntas_dao.js';
+import AspirantesDao      from './aspirantes_dao.js';
+import { store }          from '../infra/app_state.js';
+import { navigate }       from '../infra/router.js';
+import { notificar }      from '../infra/notificaciones.js';
 
 class ExamenController {
     constructor() {
@@ -19,12 +20,12 @@ class ExamenController {
 
         if (!inscripcionId) {
             const msg = 'Debe completar la inscripción antes de iniciar el examen';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
         if (!etapaId) {
             const msg = 'No se ha determinado la etapa de admisión activa';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
 
@@ -35,7 +36,7 @@ class ExamenController {
             return examen;
         } catch (error) {
             console.error('Error al iniciar examen:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al iniciar el examen: ${error.message}`, 5000, 'error'
             );
             throw error;
@@ -48,7 +49,7 @@ class ExamenController {
         const examenId = store.examenActivo?.idExamenRealizado;
         if (!examenId) {
             const msg = 'No hay examen activo para cargar preguntas';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
 
@@ -75,7 +76,7 @@ class ExamenController {
             return preguntas;
         } catch (error) {
             console.error('Error al cargar preguntas:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar preguntas: ${error.message}`, 5000, 'error'
             );
             throw error;
@@ -100,12 +101,12 @@ class ExamenController {
 
         if (!examenId) {
             const msg = 'No hay examen activo';
-            document.querySelector('app-toast')?.show(msg, 4000, 'warning');
+            notificar(msg, 4000, 'warning');
             throw new Error(msg);
         }
         if (!opcionesIds || opcionesIds.length === 0) {
             const msg = 'Debe responder al menos una pregunta';
-            document.querySelector('app-toast')?.show(msg, 3000, 'warning');
+            notificar(msg, 3000, 'warning');
             throw new Error(msg);
         }
 
@@ -113,13 +114,13 @@ class ExamenController {
         try {
             await this.respuestaExamenDao.enviarLote(examenId, opcionesIds);
             store.examenActivo = { ...store.examenActivo, completado: true };
-            document.querySelector('app-toast')?.show(
+            notificar(
                 'Examen entregado. El puntaje será calculado por el sistema.', 5000, 'success'
             );
             navigate('/resultado');
         } catch (error) {
             console.error('Error al entregar examen:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al entregar el examen: ${error.message}`, 5000, 'error'
             );
             throw error;
@@ -135,7 +136,7 @@ class ExamenController {
             return await this.examenRealizadoDao.obtenerPorAspirante(aspiranteId);
         } catch (error) {
             console.error('Error al consultar resultados del aspirante:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al consultar resultados: ${error.message}`, 4000, 'error'
             );
             throw error;

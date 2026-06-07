@@ -1,5 +1,6 @@
 import AspirantesDao from './aspirantes_dao.js';
-import { store } from '../infra/app_state.js';
+import { store }     from '../infra/app_state.js';
+import { notificar } from '../infra/notificaciones.js';
 
 const CAMPOS_REQUERIDOS = ['nombres', 'apellidos', 'dui', 'fechaNacimiento', 'correo'];
 
@@ -26,7 +27,7 @@ class AspirantesController {
     async registrar(data) {
         const validacion = this.validarDatos(data);
         if (!validacion.valido) {
-            document.querySelector('app-toast')?.show(validacion.mensaje, 4000, 'warning');
+            notificar(validacion.mensaje, 4000, 'warning');
             throw new Error(validacion.mensaje);
         }
 
@@ -37,13 +38,13 @@ class AspirantesController {
                 usaSillaRuedas: data.usaSillaRuedas ?? false
             });
             store.aspirante = aspirante;
-            document.querySelector('app-toast')?.show('Registro exitoso. ¡Bienvenido!', 3000, 'success');
+            notificar('Registro exitoso. ¡Bienvenido!', 3000, 'success');
             return aspirante;
         } catch (error) {
             console.error('Error al registrar aspirante:', error);
             // Si el backend devolvió un ErrorNegocioDTO estructurado, usar su mensaje directo
             const msg = error.mensajeNegocio ?? `Error al registrar: ${error.message}`;
-            document.querySelector('app-toast')?.show(msg, 5000, 'error');
+            notificar(msg, 5000, 'error');
             throw error;
         } finally {
             store.loading = false;

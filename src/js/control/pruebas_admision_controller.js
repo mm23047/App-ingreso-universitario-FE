@@ -1,5 +1,6 @@
 import PruebasAdmisionDao from './pruebas_admision_dao.js';
-import { store } from '../infra/app_state.js';
+import { store }          from '../infra/app_state.js';
+import { notificar }      from '../infra/notificaciones.js';
 
 class PruebasAdmisionController {
     constructor() {
@@ -11,7 +12,7 @@ class PruebasAdmisionController {
         try {
             const pruebas = await this.pruebasDao.obtenerActivas();
             if (!pruebas || pruebas.length === 0) {
-                document.querySelector('app-toast')?.show(
+                notificar(
                     'No hay prueba de admisión activa en este momento', 5000, 'warning'
                 );
                 store.prueba = null;
@@ -21,7 +22,7 @@ class PruebasAdmisionController {
             return pruebas[0];
         } catch (error) {
             console.error('Error al cargar prueba activa:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar la prueba activa: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -51,7 +52,7 @@ class PruebasAdmisionController {
             return await this.pruebasDao.obtenerTodas(first, max, buscar);
         } catch (error) {
             console.error('Error al cargar pruebas de admisión:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar procesos: ${error.message}`, 4000, 'error'
             );
             throw error;

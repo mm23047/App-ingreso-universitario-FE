@@ -1,5 +1,6 @@
 import AreasConocimientoDao from './areas_dao.js';
-import { store } from '../infra/app_state.js';
+import { store }            from '../infra/app_state.js';
+import { notificar }        from '../infra/notificaciones.js';
 
 // Resource: AreasConocimientoResource  @Path("areas")
 class AreasController {
@@ -13,7 +14,7 @@ class AreasController {
             return await this.areasDao.obtenerTodas();
         } catch (error) {
             console.error('Error al cargar áreas de conocimiento:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar áreas: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -39,7 +40,7 @@ class AreasController {
             return await this.areasDao.obtenerAreasPorPrueba(idPrueba);
         } catch (error) {
             console.error('Error al cargar áreas por prueba:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar áreas: ${error.message}`, 4000, 'error'
             );
             throw error;
