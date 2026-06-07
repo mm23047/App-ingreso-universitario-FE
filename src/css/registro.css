@@ -1,0 +1,144 @@
+/* ============================================================
+   REGISTRO — estilos de la vista de registro de aspirante (#/registro)
+   ============================================================ */
+
+.reg-section { max-width: 640px; margin: 0 auto; }
+
+/* ── Badge de prioridad ── */
+.prioridad-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-full);
+    font-size: .8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.prioridad-badge--secondary { background: var(--color-secondary); }
+.prioridad-badge--muted     { background: var(--color-text-muted); }
+
+/* ── Fila de selección de carrera ── */
+.sel-row { display: flex; align-items: center; gap: var(--space-md); }
+.sel-row select {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    background: var(--color-surface);
+}
+.sel-row select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+
+/* ── Checkbox accesibilidad (fila horizontal) ── */
+.form-check {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.form-check input[type="checkbox"] { width: auto; }
+.form-check label { font-weight: normal; }
+
+/* ── Estado de carga de carreras ── */
+.estado-carga { padding: var(--space-lg) 0; }
+
+/* ── Barra de acciones del formulario ── */
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    justify-content: flex-end;
+    margin-top: var(--space-lg);
+}
+
+/* ── Panel de duplicado ── */
+.alerta-duplicado {
+    background: #FEF3C7;
+    border: 1.5px solid #F59E0B;
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    max-width: 640px;
+    margin: 0 auto;
+}
+.alerta-duplicado h3 { color: #92400E; margin: 0 0 var(--space-sm); }
+.alerta-duplicado p  { color: #78350F; font-size: .95rem; margin: 0; }
+
+.alerta-recuperar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+    margin-top: var(--space-md);
+}
+.alerta-recuperar p { font-size: .85rem; color: #78350F; margin: 0; }
+
+/* ── Panel de éxito ── */
+.exito-panel {
+    background: #F0FDF4;
+    border: 1.5px solid #86EFAC;
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    max-width: 640px;
+    margin: 0 auto;
+}
+.exito-panel h2    { color: #166534; margin: 0 0 var(--space-md); }
+.exito-panel > p   { color: #166534; margin-bottom: var(--space-md); }
+
+.dato-fila {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid #BBF7D0;
+    font-size: .95rem;
+}
+.dato-fila:last-child { border-bottom: none; }
+.dato-fila dt { color: #166534; min-width: 120px; font-weight: 500; }
+.dato-fila dd { margin: 0; color: #14532D; }
+
+.carrera-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    background: #DCFCE7;
+    color: #166534;
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    font-size: .85rem;
+    font-weight: 500;
+    margin: 2px;
+}
+.carrera-chip span {
+    background: #166534;
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    font-weight: 700;
+}
+
+/* ── Aviso proceso inactivo ── */
+.aviso-proceso {
+    background: #FEF3C7;
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+.aviso-proceso p { margin: 0; color: #78350F; font-size: .9rem; }
+
+/* ── Resumen de carreras registradas ── */
+.resumen-carreras-titulo {
+    margin-bottom: var(--space-xs);
+    color: #166534;
+    font-weight: 500;
+}

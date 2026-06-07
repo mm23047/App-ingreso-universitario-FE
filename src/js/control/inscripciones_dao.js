@@ -32,6 +32,20 @@ class InscripcionesDao extends DefaultDao {
             throw error;
         }
     }
+
+    async eliminar(id) {
+        if (!id) throw new Error('El ID de la inscripción es requerido');
+        try {
+            const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'DELETE' });
+            if (respuesta.status === 204) return;
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
+        } catch (error) {
+            console.error('Error al eliminar inscripción:', error);
+            throw error;
+        }
+    }
 }
 
 export default InscripcionesDao;

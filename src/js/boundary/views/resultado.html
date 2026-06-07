@@ -12,87 +12,7 @@
        endpoint GET /aspirantes?dui=...). Se usa el UUID del aspirante.
      ============================================================ -->
 
-<style>
-    .consulta-wrap { max-width: 640px; margin: 0 auto; }
-    .examen-card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        box-shadow: var(--shadow-sm);
-        margin-bottom: var(--space-md);
-    }
-    .examen-header {
-        display: flex; align-items: flex-start; justify-content: space-between;
-        margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-sm);
-    }
-    .examen-header h3 { margin: 0; color: var(--color-primary-dark); }
-    .badge-calificado   { background:#D1FAE5; color:#065F46; font-size:.75rem;
-                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badge-pendiente    { background:#FEF3C7; color:#92400E; font-size:.75rem;
-                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badge-admitido     { background:#DBEAFE; color:#1E40AF; font-size:.75rem;
-                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badge-no-admitido  { background:#FEE2E2; color:#991B1B; font-size:.75rem;
-                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badge-pend-adm     { background:#F3F4F6; color:var(--color-text-muted); font-size:.75rem;
-                          font-weight:700; padding:3px 12px; border-radius:var(--radius-full); }
-    .badges-row         { display:flex; gap:var(--space-xs); flex-wrap:wrap; }
-    .examen-grid { display:grid; grid-template-columns:140px 1fr;
-                   gap:var(--space-xs) var(--space-lg); font-size:.93rem; }
-    .examen-grid dt { color:var(--color-text-muted); }
-    .examen-grid dd { font-weight:500; margin:0; }
-    .puntaje-num { font-size:1.8rem; font-weight:700; color:var(--color-primary-dark); }
-    .input-id {
-        flex:1; min-width:200px; padding:var(--space-sm) var(--space-md);
-        border:1px solid var(--color-border); border-radius:var(--radius-md);
-        font-size:1rem; background:var(--color-surface); font-family:monospace;
-    }
-    .input-id:focus { outline:none; border-color:var(--color-primary);
-                      box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-
-    /* ── Tarjeta: inscrito sin examen ── */
-    .inscrito-notif {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-left: 4px solid var(--color-info);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        box-shadow: var(--shadow-sm);
-        margin-bottom: var(--space-md);
-    }
-
-    /* ── Cuadro de recomendaciones (usado por generarRecomendacionesHtml) ── */
-    .recom-box {
-        margin-top: var(--space-lg);
-        border-radius: var(--radius-md);
-        padding: var(--space-md) var(--space-lg);
-        border-left: 4px solid;
-    }
-    .recom-titulo {
-        display: flex; align-items: center; gap: var(--space-sm);
-        font-size: .72rem; font-weight: 700;
-        letter-spacing: .07em; text-transform: uppercase;
-        margin-bottom: var(--space-xs);
-    }
-    .recom-subtitulo { font-weight: 600; font-size: .95rem; margin: 0 0 var(--space-sm); }
-    .recom-lista { margin: 0; padding-left: var(--space-lg); font-size: .875rem; line-height: 1.75; }
-    .recom-lista li + li { margin-top: var(--space-xs); }
-
-    .recom-admitido               { background:#EFF6FF; border-color:var(--color-primary-light); color:var(--color-primary-dark); }
-    .recom-admitido .recom-titulo    { color:var(--color-primary); }
-    .recom-admitido .recom-subtitulo { color:var(--color-secondary); }
-
-    .recom-pendiente              { background:#FFFBEB; border-color:var(--color-warning); color:#78350F; }
-    .recom-pendiente .recom-titulo   { color:#92400E; }
-    .recom-pendiente .recom-subtitulo { color:#92400E; }
-
-    .recom-no-admitido            { background:#FEF2F2; border-color:var(--color-danger); color:#7F1D1D; }
-    .recom-no-admitido .recom-titulo   { color:var(--color-danger); }
-    .recom-no-admitido .recom-subtitulo { color:#991B1B; }
-</style>
-
-<h2 class="mb-md" style="color:var(--color-primary-dark);">Resultado de tu prueba</h2>
+<h2 class="mb-md">Resultado de tu prueba</h2>
 <p class="text-muted mb-lg">
     Consulta la fecha, estado y puntaje de tu prueba de admisión.
 </p>
@@ -101,27 +21,25 @@
 <div class="consulta-wrap card mb-lg" id="panel-busqueda">
     <div class="card-header">
         <h3>Buscar por ID de aspirante</h3>
-        <p class="text-muted" style="font-size:.9rem; margin:var(--space-xs) 0 0;">
+        <p class="text-muted card-subtitle">
             Ingresa el UUID que recibiste al registrarte.
             Si acabas de registrarte en esta sesión, tus resultados se cargan automáticamente.
         </p>
     </div>
-    <div style="display:flex; gap:var(--space-md); align-items:flex-end; flex-wrap:wrap;">
-        <div class="form-group" style="flex:1;">
+    <div class="busqueda-row">
+        <div class="form-group">
             <label for="input-id" style="font-weight:500;">ID de aspirante (UUID)</label>
             <input type="text" id="input-id" class="input-id"
                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
         </div>
-        <button id="btn-buscar" class="btn btn-primary" style="align-self:flex-end;">
+        <button id="btn-buscar" class="btn btn-primary">
             Consultar
         </button>
     </div>
 </div>
 
 <!-- ── Mensajes de estado ── -->
-<div id="msg-estado" class="consulta-wrap text-center hidden"
-     style="padding:var(--space-xl) 0; color:var(--color-text-muted);">
-</div>
+<div id="msg-estado" class="consulta-wrap text-center msg-estado hidden"></div>
 
 <!-- ── Lista de exámenes ── -->
 <div id="lista-resultados" class="consulta-wrap"></div>
@@ -195,16 +113,16 @@
         const calificado = ex.puntajeFinal != null;
 
         const badgeCalificacion = calificado
-            ? '<span class="badge-calificado">Calificado</span>'
-            : '<span class="badge-pendiente">Pendiente de calificación</span>';
+            ? '<span class="badge badge-success">Calificado</span>'
+            : '<span class="badge badge-warning">Pendiente de calificación</span>';
 
         let badgeAdmision = '';
         if (ex.estadoAdmision === 'ADMITIDO') {
-            badgeAdmision = '<span class="badge-admitido">Admitido</span>';
+            badgeAdmision = '<span class="badge badge-info">Admitido</span>';
         } else if (ex.estadoAdmision === 'NO_ADMITIDO') {
-            badgeAdmision = '<span class="badge-no-admitido">No admitido</span>';
+            badgeAdmision = '<span class="badge badge-danger">No admitido</span>';
         } else if (ex.estadoAdmision === 'PENDIENTE') {
-            badgeAdmision = '<span class="badge-pend-adm">Pendiente de admisión</span>';
+            badgeAdmision = '<span class="badge badge-neutral">Pendiente de admisión</span>';
         }
 
         const fecha = ex.fechaRealizacion
@@ -226,7 +144,7 @@
         const estadoInscripcion = ex.inscripcionesPrueba?.estado ?? '—';
 
         return `
-            <div class="examen-card">
+            <div class="card mb-md">
                 <div class="examen-header">
                     <h3>${pruebaNombre}</h3>
                     <div class="badges-row">
@@ -235,8 +153,8 @@
                     </div>
                 </div>
                 ${calificado ? `
-                    <div style="text-align:center; margin:var(--space-md) 0;">
-                        <p style="font-size:.85rem; color:var(--color-text-muted); margin-bottom:4px;">Puntaje obtenido</p>
+                    <div class="puntaje-panel">
+                        <p class="puntaje-label">Puntaje obtenido</p>
                         <span class="puntaje-num">${ex.puntajeFinal}</span>
                     </div>` : ''}
                 <dl class="examen-grid">
@@ -252,9 +170,9 @@
                     <dt>Clave de examen</dt>
                     <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>
                 </dl>
-                
+
                 ${generarRecomendacionesHtml(ex)}
-                
+
             </div>
         `;
     };
@@ -271,7 +189,7 @@
                 <div class="examen-header">
                     <h3>${pruebaNombre}</h3>
                     <div class="badges-row">
-                        <span class="badge-pendiente">Pendiente de examen</span>
+                        <span class="badge badge-warning">Pendiente de examen</span>
                     </div>
                 </div>
                 <dl class="examen-grid">

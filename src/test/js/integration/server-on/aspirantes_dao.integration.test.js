@@ -97,28 +97,60 @@ describe('AspirantesDao — Integración con backend', () => {
             expect(errorDuplicado.mensajeNegocio).to.be.a('string').and.not.equal('');
         });
 
-        it('debe propagar err.tipo = EDAD_MINIMA cuando el aspirante es menor de edad', async function () {
+        it('debe propagar err.tipo = CORREO_DUPLICADO cuando el correo ya está registrado (409)', async function () {
+            this.timeout(10000);
+            const correoCompartido = `correo.dup.${Date.now()}@tpi-test.sv`;
+            const datosA = { ...generarDatos('cdup-a'), correo: correoCompartido };
+            const datosB = { ...generarDatos('cdup-b'), correo: correoCompartido };
+
+            // Primera llamada: sin try/catch, falla si el servidor está apagado
+            const primerAspirante = await dao.crear(datosA);
+            idsCreados.push(primerAspirante.id);
+
+            // Segunda llamada: mismo correo, DUI distinto — debe producir CORREO_DUPLICADO
+            let errorCorreo;
+            try {
+                await dao.crear(datosB);
+            } catch (error) {
+                errorCorreo = error;
+            }
+
+            expect(errorCorreo, 'Debe rechazar el correo duplicado').to.exist;
+            expect(errorCorreo.httpStatus, 'Error de red — ¿está el servidor activo?').to.be.a('number');
+            expect(errorCorreo.httpStatus).to.equal(409);
+            expect(errorCorreo.tipo).to.equal('CORREO_DUPLICADO');
+            expect(errorCorreo.mensajeNegocio).to.be.a('string').and.not.equal('');
+        });
+
+        it('debe retornar httpStatus 400 y tipo EDAD_MINIMA cuando el aspirante es menor de edad', async function () {
             this.timeout(5000);
             const datos = generarDatosMenorEdad();
             let errorCapturado;
 
             try {
                 await dao.crear(datos);
-                // Si llega aquí el backend no rechazó al menor — no hay ID que limpiar
             } catch (error) {
                 errorCapturado = error;
-                // El backend rechazó antes de persistir — no hay ID que registrar
             }
 
-            expect(errorCapturado, 'El backend debe rechazar aspirantes menores de edad').to.exist;
-            expect(errorCapturado.httpStatus, 'Error de red — ¿está el servidor activo?').to.be.a('number');
+            // El backend NO persiste al menor — no hay ID que registrar ni limpiar.
+            // AspirantesDatoResource devuelve 400 BAD_REQUEST para EDAD_MINIMA
+            // (solo DUI_DUPLICADO y CORREO_DUPLICADO devuelven 409 CONFLICT).
+            expect(errorCapturado,
+                'El backend debe rechazar la creación del aspirante menor de edad'
+            ).to.exist;
 
-            if (errorCapturado.tipo !== null) {
-                expect(TIPOS_NEGOCIO_CONOCIDOS).to.include(errorCapturado.tipo);
-            }
-            if (errorCapturado.tipo === 'EDAD_MINIMA') {
-                expect(errorCapturado.mensajeNegocio).to.be.a('string');
-            }
+            expect(errorCapturado.httpStatus,
+                'Error de red — ¿está el servidor activo?'
+            ).to.equal(400);
+
+            expect(errorCapturado.tipo,
+                'El backend debe informar el tipo de negocio exacto'
+            ).to.equal('EDAD_MINIMA');
+
+            expect(errorCapturado.mensajeNegocio,
+                'Debe incluir el mensaje de negocio del backend'
+            ).to.be.a('string').and.not.equal('');
         });
     });
 

@@ -13,52 +13,6 @@
           body: {catalogoCarrera:{idCarrera},prioridad}
      ============================================================ -->
 
-<style>
-    .reg-section { max-width: 640px; margin: 0 auto; }
-    .prioridad-badge {
-        display: inline-flex; align-items: center; justify-content: center;
-        min-width: 28px; height: 28px;
-        background: var(--color-primary); color: white;
-        border-radius: var(--radius-full); font-size: .8rem; font-weight: 700; flex-shrink: 0;
-    }
-    .sel-row { display: flex; align-items: center; gap: var(--space-md); }
-    .sel-row select {
-        flex: 1; padding: var(--space-sm) var(--space-md);
-        border: 1px solid var(--color-border); border-radius: var(--radius-md);
-        font-size: 1rem; background: var(--color-surface);
-    }
-    .sel-row select:focus {
-        outline: none; border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
-    }
-    .alerta-duplicado {
-        background: #FEF3C7; border: 1.5px solid #F59E0B;
-        border-radius: var(--radius-lg); padding: var(--space-lg);
-        max-width: 640px; margin: 0 auto;
-    }
-    .alerta-duplicado h3 { color: #92400E; margin: 0 0 var(--space-sm); }
-    .alerta-duplicado p  { color: #78350F; font-size: .95rem; margin: 0; }
-    .exito-panel {
-        background: #F0FDF4; border: 1.5px solid #86EFAC;
-        border-radius: var(--radius-lg); padding: var(--space-xl);
-        max-width: 640px; margin: 0 auto;
-    }
-    .exito-panel h2 { color: #166534; margin: 0 0 var(--space-md); }
-    .dato-fila { display: flex; gap: var(--space-md); padding: var(--space-sm) 0;
-        border-bottom: 1px solid #BBF7D0; font-size: .95rem; }
-    .dato-fila:last-child { border-bottom: none; }
-    .dato-fila dt { color: #166534; min-width: 120px; font-weight: 500; }
-    .dato-fila dd { margin: 0; color: #14532D; }
-    .carrera-chip {
-        display: inline-flex; align-items: center; gap: var(--space-xs);
-        background: #DCFCE7; color: #166534; border-radius: var(--radius-full);
-        padding: 3px 10px; font-size: .85rem; font-weight: 500; margin: 2px;
-    }
-    .carrera-chip span { background: #166534; color: white; border-radius: 50%;
-        min-width: 18px; height: 18px; display: inline-flex; align-items: center;
-        justify-content: center; font-size: .7rem; font-weight: 700; }
-</style>
-
 <!-- ── Sección 1: Datos personales ── -->
 <div id="sec-datos" class="reg-section card mb-lg">
     <div class="card-header">
@@ -91,9 +45,9 @@
             <label for="correo">Correo electrónico</label>
             <input type="email" id="correo" name="correo" placeholder="tu@correo.com" required>
         </div>
-        <div class="form-group mt-md" style="flex-direction:row;align-items:center;gap:var(--space-sm);">
-            <input type="checkbox" id="usaSillaRuedas" name="usaSillaRuedas" style="width:auto;">
-            <label for="usaSillaRuedas" style="font-weight:normal;">
+        <div class="form-group form-check mt-md">
+            <input type="checkbox" id="usaSillaRuedas" name="usaSillaRuedas">
+            <label for="usaSillaRuedas">
                 Requiero espacio accesible para silla de ruedas
             </label>
         </div>
@@ -109,7 +63,7 @@
         </p>
     </div>
 
-    <div id="estado-carreras" class="text-muted text-center" style="padding:var(--space-lg) 0;">
+    <div id="estado-carreras" class="text-muted text-center estado-carga">
         Cargando carreras disponibles...
     </div>
 
@@ -124,7 +78,7 @@
         </div>
         <div class="form-group mt-md">
             <div class="sel-row">
-                <span class="prioridad-badge" style="background:var(--color-secondary);" title="Segunda preferencia">2</span>
+                <span class="prioridad-badge prioridad-badge--secondary" title="Segunda preferencia">2</span>
                 <select id="c2" aria-label="Segunda preferencia">
                     <option value="">— Segunda opción (opcional) —</option>
                 </select>
@@ -132,7 +86,7 @@
         </div>
         <div class="form-group mt-md">
             <div class="sel-row">
-                <span class="prioridad-badge" style="background:var(--color-text-muted);" title="Tercera preferencia">3</span>
+                <span class="prioridad-badge prioridad-badge--muted" title="Tercera preferencia">3</span>
                 <select id="c3" aria-label="Tercera preferencia">
                     <option value="">— Tercera opción (opcional) —</option>
                 </select>
@@ -140,7 +94,7 @@
         </div>
     </div>
 
-    <div class="mt-lg" style="display:flex;gap:var(--space-md);justify-content:flex-end;">
+    <div class="form-actions">
         <button type="reset" form="form-datos" class="btn btn-outline" id="btn-limpiar">Limpiar</button>
         <button type="button" class="btn btn-primary" id="btn-registrar">
             Registrar y continuar →
@@ -151,16 +105,15 @@
 <!-- ── Panel: DUI/correo duplicado ── -->
 <div id="panel-duplicado" class="alerta-duplicado hidden">
     <h3>⚠ Ya existe una cuenta asociada a estos datos</h3>
-    <p style="margin-bottom:var(--space-md);">
+    <p class="mb-md">
         Los datos ingresados (DUI o correo) ya están registrados en el sistema.<br>
         Si ya tienes una cuenta, puedes recuperar el acceso para consultar o continuar tu proceso de admisión.
     </p>
-    <div style="display:flex; flex-direction:column; gap:var(--space-sm); align-items:flex-start;">
-        <button id="btn-recuperar-cuenta" class="btn"
-                style="background:#D97706; color:white; border:1.5px solid #B45309; font-weight:600;">
+    <div class="alerta-recuperar">
+        <button id="btn-recuperar-cuenta" class="btn btn-warning">
             Recuperar acceso a mi cuenta →
         </button>
-        <p style="margin:0; font-size:.85rem; color:#78350F;">
+        <p>
             Si crees que es un error, contacta a la administración del proceso de ingreso.
         </p>
     </div>
@@ -169,14 +122,13 @@
 <!-- ── Panel: Confirmación de éxito ── -->
 <div id="panel-exito" class="exito-panel hidden">
     <h2>✓ Registro completado</h2>
-    <p style="color:#166534; margin-bottom:var(--space-md);">
+    <p>
         Tu perfil de aspirante fue creado y quedaste inscrito en el proceso de admisión.
     </p>
-    <dl id="resumen-datos" style="margin-bottom:var(--space-md);"></dl>
-    <div id="resumen-carreras" style="margin-bottom:var(--space-lg);"></div>
-    <div id="aviso-sin-proceso" class="hidden"
-         style="background:#FEF3C7;border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-md);">
-        <p style="margin:0;color:#78350F;font-size:.9rem;">
+    <dl id="resumen-datos" class="mb-md"></dl>
+    <div id="resumen-carreras" class="mb-lg"></div>
+    <div id="aviso-sin-proceso" class="aviso-proceso hidden">
+        <p>
             No hay proceso de admisión activo actualmente.
             Tu perfil fue creado, pero las carreras de interés no pudieron registrarse todavía.
             Vuelve cuando haya un proceso activo para completar tu selección.
@@ -225,7 +177,7 @@
         })
         .catch(() => {
             estadoCarreras.innerHTML =
-                '<span style="color:var(--color-danger);">⚠ No se pudieron cargar las carreras. Verifica la conexión.</span>';
+                '<span class="text-danger">⚠ No se pudieron cargar las carreras. Verifica la conexión.</span>';
         });
 
     // ── Nombre de carrera por id (para mostrar en el resumen) ──
@@ -303,7 +255,7 @@
                     `<span class="carrera-chip"><span>${c.prioridad}</span>${nombreCarrera(c.idCarrera)}</span>`
                 ).join('');
                 document.getElementById('resumen-carreras').innerHTML =
-                    `<p style="margin-bottom:var(--space-xs);color:#166534;font-weight:500;">Carreras registradas:</p>${chips}`;
+                    `<p class="resumen-carreras-titulo">Carreras registradas:</p>${chips}`;
             } else {
                 document.getElementById('aviso-sin-proceso').classList.remove('hidden');
             }

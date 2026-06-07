@@ -34,8 +34,9 @@ global.document = {
 // navigate puede ser llamado por controllers que hacen router redirect
 global.navigate = () => {};
 
-// window.location es usado por router.js en navigate()
+// window.location es usado por router.js en navigate() y por DefaultDao para construir BASE_URL
 global.location = {
+    hostname: 'localhost',
     _hash: '',
     get hash() { return this._hash; },
     set hash(v) { this._hash = String(v); }
