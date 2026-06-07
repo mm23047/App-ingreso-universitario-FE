@@ -148,6 +148,15 @@
     const inscCtrl = new InscripcionesController();
     const carrCtrl = new CarrerasController();
 
+    // Restricción de fecha de nacimiento: no futura, máximo 100 años atrás
+    const inputFecha = document.getElementById('fechaNacimiento');
+    const _hoy = new Date();
+    const _minFecha = new Date(_hoy);
+    _minFecha.setFullYear(_hoy.getFullYear() - 100);
+    const _toISO = d => d.toISOString().split('T')[0];
+    inputFecha.max = _toISO(_hoy);
+    inputFecha.min = _toISO(_minFecha);
+
     const secDatos       = document.getElementById('sec-datos');
     const secCarreras    = document.getElementById('sec-carreras');
     const estadoCarreras = document.getElementById('estado-carreras');

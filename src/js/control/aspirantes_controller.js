@@ -21,6 +21,17 @@ class AspirantesController {
         if (!/^\d{8}-\d$/.test(data.dui)) {
             return { valido: false, mensaje: 'El DUI debe tener el formato 00000000-0' };
         }
+        const _fechaNac = new Date(data.fechaNacimiento + 'T00:00:00');
+        if (isNaN(_fechaNac.getTime())) {
+            return { valido: false, mensaje: 'La fecha de nacimiento no es válida' };
+        }
+        const _hoy = new Date();
+        if (_fechaNac > _hoy) {
+            return { valido: false, mensaje: 'La fecha de nacimiento no puede ser una fecha futura' };
+        }
+        if (_hoy.getFullYear() - _fechaNac.getFullYear() > 100) {
+            return { valido: false, mensaje: 'La fecha de nacimiento ingresada no es válida' };
+        }
         return { valido: true };
     }
 
