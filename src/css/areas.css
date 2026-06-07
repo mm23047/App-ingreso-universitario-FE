@@ -1,0 +1,13 @@
+/* ============================================================
+   ÁREAS — estilos de la vista de áreas de conocimiento (#/areas)
+   ============================================================ */
+
+.contexto-proceso {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-lg);
+    font-size: .93rem;
+}
+.contexto-proceso strong { color: var(--color-primary-dark); }
