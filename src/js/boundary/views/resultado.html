@@ -17,20 +17,19 @@
     Consulta la fecha, estado y puntaje de tu prueba de admisión.
 </p>
 
-<!-- ── Panel de búsqueda manual ── -->
 <div class="consulta-wrap card mb-lg" id="panel-busqueda">
     <div class="card-header">
-        <h3>Buscar por ID de aspirante</h3>
+        <h3>Consultar resultados de admisión</h3>
         <p class="text-muted card-subtitle">
-            Ingresa el UUID que recibiste al registrarte.
-            Si acabas de registrarte en esta sesión, tus resultados se cargan automáticamente.
+            Ingresa tu DUI, Correo electrónico o ID de aspirante.
+            Si acabas de registrarte en esta sesión, tus resultados se cargarán automáticamente.
         </p>
     </div>
     <div class="busqueda-row">
         <div class="form-group">
-            <label for="input-id" style="font-weight:500;">ID de aspirante (UUID)</label>
+            <label for="input-id" style="font-weight:500;">DUI, Correo o ID de aspirante</label>
             <input type="text" id="input-id" class="input-id"
-                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                   placeholder="Ej: 00000000-0 o ejemplo@correo.com">
         </div>
         <button id="btn-buscar" class="btn btn-primary">
             Consultar
@@ -38,10 +37,8 @@
     </div>
 </div>
 
-<!-- ── Mensajes de estado ── -->
 <div id="msg-estado" class="consulta-wrap text-center msg-estado hidden"></div>
 
-<!-- ── Lista de exámenes ── -->
 <div id="lista-resultados" class="consulta-wrap"></div>
 
 <script type="module">
@@ -86,12 +83,23 @@
                     'Explora otras carreras donde tu puntaje podría ser competitivo.',
                     'Acude al servicio de orientación vocacional de la universidad.'
                 ]
+            },
+            // NUEVO: Escenario UX cuando el examen ya tiene nota calculada pero sigue en proceso de cupo
+            CALIFICADO: {
+                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu examen ya ha sido calificado',
+                pasos: [
+                    'Tu nota ha sido registrada en el sistema de manera exitosa.',
+                    'Espera a que finalice la etapa actual para conocer la distribución competitiva de cupos.',
+                    'Monitorea periódicamente este panel para verificar si tu estado cambia a Admitido.'
+                ]
             }
         };
 
         let estadoClave = examen.estadoAdmision;
-        if (!estadoClave && examen.inscripcionesPrueba?.estado === 'INSCRITO') {
-            estadoClave = 'INSCRITO';
+        
+        // Si no hay estado de admisión definitivo aún, heredamos el estado de la inscripción del examen
+        if (!estadoClave && examen.inscripcionesPrueba?.estado) {
+            estadoClave = examen.inscripcionesPrueba.estado; 
         }
 
         const config = CONFIG[estadoClave];
@@ -215,34 +223,55 @@
             </div>`;
     };
 
-    const buscarResultados = async (aspiranteId) => {
-        if (!aspiranteId) {
-            mostrarMensaje('Ingresa tu ID de aspirante para consultar.');
+    const renderSoloRegistrado = (aspirante) => {
+        const nombreAsp = `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim() || 'Aspirante';
+        
+        return `
+            <div class="inscrito-notif" style="border-left: 4px solid var(--clr-warning, #f59e0b);">
+                <div class="examen-header">
+                    <h3>¡Registro Encontrado!</h3>
+                    <div class="badges-row">
+                        <span class="badge badge-warning" style="background-color: #fef3c7; color: #d97706;">Sin convocatorias activas</span>
+                    </div>
+                </div>
+                <p class="mb-md">Hola <strong>${nombreAsp}</strong>, tu cuenta ha sido creada exitosamente en nuestra plataforma, pero detectamos que aún no te has inscrito a ninguna prueba de admisión para el ciclo actual.</p>
+                
+                <div class="recom-box recom-pendiente">
+                    <div class="recom-titulo">
+                        <span></span>
+                        <span>¿Qué debes hacer ahora?</span>
+                    </div>
+                    <p class="recom-subtitulo">Sigue estos pasos para activar tu proceso de selección:</p>
+                    <ol class="recom-lista">
+                        <li>Dirígete al apartado de <strong>Inscripciones</strong> en el menú principal.</li>
+                        <li>Selecciona la carrera a la que deseas aplicar y la convocatoria disponible.</li>
+                        <li>Descarga tu mandamiento de pago (si aplica) y efectúa el pago en las agencias autorizadas.</li>
+                        <li>Una vez procesado tu pago, regresa a esta pestaña para verificar la asignación de tu aula, fecha y clave de examen.</li>
+                    </ol>
+                </div>
+            </div>`;
+    };
+
+    // Cambiado el nombre de la variable a "criterio" para reflejar la flexibilidad
+    const buscarResultados = async (criterio) => {
+        if (!criterio) {
+            mostrarMensaje('Ingresa tu DUI, Correo o ID de aspirante para consultar.');
             return;
         }
         mostrarMensaje('Consultando resultados...');
 
         try {
-            const examenes = await ctrl.consultarResultados(aspiranteId);
+            const { tipo, datos } = await ctrl.consultarEstadoAspirante(criterio);
             msgEstado.classList.add('hidden');
 
-            if (!examenes.length) {
-                const inscripciones = await ctrl.consultarInscripciones(aspiranteId);
-                if (inscripciones.length) {
-                    msgEstado.classList.add('hidden');
-                    listaEl.innerHTML = inscripciones.map(renderInscritoSinExamen).join('');
-                } else {
-                    mostrarMensaje('No se encontró información para este aspirante.');
-                }
-                return;
-            }
-
-            // El backend devuelve los exámenes ordenados por fechaRealizacion DESC
-            listaEl.innerHTML = examenes.map(renderExamen).join('');
+            if      (tipo === 'examenes')      listaEl.innerHTML = datos.map(renderExamen).join('');
+            else if (tipo === 'inscripciones') listaEl.innerHTML = datos.map(renderInscritoSinExamen).join('');
+            else if (tipo === 'solo_registrado') listaEl.innerHTML = renderSoloRegistrado(datos); 
+            else    mostrarMensaje('⚠ No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
         } catch (error) {
             const esCaida = error instanceof TypeError && error.message.includes('fetch');
             mostrarMensaje(esCaida
-                ? 'Backend no disponible — comprueba que el servidor esté encendido.'
+                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
                 : `Error al consultar resultados: ${error.message}`
             );
         }
@@ -257,12 +286,12 @@
 
     // ── Búsqueda manual ──
     btnBuscar.addEventListener('click', () => {
-        const id = inputId.value.trim();
-        if (!id) {
-            document.querySelector('app-toast')?.show('Ingresa tu ID de aspirante.', 3000, 'warning');
+        const criterio = inputId.value.trim();
+        if (!criterio) {
+            document.querySelector('app-toast')?.show('Ingresa tu DUI, Correo o ID de aspirante.', 3000, 'warning');
             return;
         }
-        buscarResultados(id);
+        buscarResultados(criterio);
     });
 
     inputId.addEventListener('keydown', (e) => {

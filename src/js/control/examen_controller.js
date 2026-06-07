@@ -169,6 +169,73 @@ class ExamenController {
         }
     }
 
+    async consultarEstadoAspirante(criterio) {
+        if (!criterio) throw new Error('El criterio de búsqueda es requerido');
+        store.loading = true;
+        try {
+            criterio = criterio.trim();
+            const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(criterio);
+
+            // ==========================================
+            // CASO A: BÚSQUEDA POR UUID
+            // ==========================================
+            if (esUuid) {
+                const examenes = await this.examenRealizadoDao.obtenerPorAspirante(criterio);
+                if (examenes.length) return { tipo: 'examenes', datos: examenes };
+
+                const inscripciones = await this.aspirantesDao.obtenerInscripciones(criterio);
+                if (inscripciones.length) return { tipo: 'inscripciones', datos: inscripciones };
+
+                // Si es un UUID válido pero no tiene nada, asumimos que solo está registrado
+                return { tipo: 'solo_registrado', datos: { nombres: 'Aspirante', apellidos: '' } };
+            }
+
+            // ==========================================
+            // CASO B: BÚSQUEDA POR DUI O CORREO (NUEVO ENDPOINT O2)
+            // ==========================================
+            const paramName = criterio.includes('@') ? 'correo' : 'dui';
+            const urlDao = this.examenRealizadoDao.BASE_URL;
+            const urlBase = urlDao.endsWith('/') ? urlDao : urlDao + '/';
+            
+            const response = await fetch(`${urlBase}buscar?${paramName}=${encodeURIComponent(criterio)}`);
+            if (!response.ok) throw new Error('Error en el servidor al procesar la búsqueda.');
+            
+            const examenes = await response.json();
+            if (examenes && examenes.length > 0) {
+                return { tipo: 'examenes', datos: examenes };
+            }
+
+            // Si no hay exámenes, verificamos si el aspirante existe en el sistema
+            const queryParamAspirante = paramName === 'correo' ? `correo=${encodeURIComponent(criterio)}` : `dui=${encodeURIComponent(criterio)}`;
+            
+            // CORREGIDO: Se quitó el "this.this" duplicado que provocaba error sintáctico
+            const resAspirante = await fetch(`${this.aspirantesDao.BASE_URL}aspirantes?${queryParamAspirante}`);
+            
+            if (resAspirante.ok) {
+                const aspirantes = await resAspirante.json();
+                
+                if (aspirantes && aspirantes.length > 0) {
+                    const aspiranteActivo = aspirantes[0];
+                    const inscripciones = await this.aspirantesDao.obtenerInscripciones(aspiranteActivo.id);
+                    
+                    if (inscripciones.length) {
+                        return { tipo: 'inscripciones', datos: inscripciones };
+                    }
+                    
+                    // Registro limpio encontrado pero sin transacciones (Solo Registrado)
+                    return { tipo: 'solo_registrado', datos: aspiranteActivo };
+                }
+            }
+
+            // Si el criterio (DUI/Correo) no pertenece a nadie en la BD
+            return { tipo: 'nada', datos: [] };
+        } catch (error) {
+            console.error('Error al consultar estado del aspirante:', error);
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
 }
 
 export default ExamenController;
