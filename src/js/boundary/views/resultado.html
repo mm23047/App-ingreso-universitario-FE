@@ -7,10 +7,19 @@
 
      Flujo:
        1. Si store.aspirante.id existe → auto-consulta al cargar la página
-       2. Si no → el usuario ingresa su UUID de aspirante manualmente
-       La búsqueda por DUI no está disponible en el backend actual (no hay
-       endpoint GET /aspirantes?dui=...). Se usa el UUID del aspirante.
+       2. Si no → el usuario ingresa DUI, correo o UUID de aspirante manualmente
      ============================================================ -->
+<style>
+.alerta-datos {
+    background: #fef3c7;
+    border-left: 4px solid #d97706;
+    color: #92400e;
+    padding: 0.65rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+</style>
 
 <h2 class="mb-md">Resultado de tu prueba</h2>
 <p class="text-muted mb-lg">
@@ -151,8 +160,16 @@
 
         const estadoInscripcion = ex.inscripcionesPrueba?.estado ?? '—';
 
+        const alertaInconsistencia = (calificado && estadoInscripcion === 'INSCRITO')
+            ? `<div class="alerta-datos" role="alert">
+                   ⚠ El puntaje está registrado pero el estado de tu inscripción no se actualizó correctamente.
+                   Comunícate con la Oficina de Admisiones para verificar tu expediente.
+               </div>`
+            : '';
+
         return `
             <div class="card mb-md">
+                ${alertaInconsistencia}
                 <div class="examen-header">
                     <h3>${pruebaNombre}</h3>
                     <div class="badges-row">

@@ -190,7 +190,9 @@ class ExamenController {
                 try {
                     const aspirante = await this.aspirantesDao.obtenerPorId(criterio);
                     return { tipo: 'solo_registrado', datos: aspirante };
-                } catch {
+                } catch (e) {
+                    const es404 = e.message?.includes('404');
+                    if (!es404) console.warn('Error inesperado al verificar aspirante por ID:', e);
                     return { tipo: 'nada', datos: [] };
                 }
             }
