@@ -40,7 +40,7 @@ describe('AspirantesDao — Backend apagado (errores de red)', () => {
             }
 
             expect(errorCapturado,
-                '⚠ El backend respondió — este test DEBE ejecutarse con el backend APAGADO'
+                'El backend respondió — este test DEBE ejecutarse con el backend APAGADO'
             ).to.exist;
 
             expect(errorCapturado,
@@ -68,7 +68,7 @@ describe('AspirantesDao — Backend apagado (errores de red)', () => {
             }
 
             expect(errorCapturado,
-                '⚠ El backend respondió — este test DEBE ejecutarse con el backend APAGADO'
+                'El backend respondió — este test DEBE ejecutarse con el backend APAGADO'
             ).to.exist;
 
             expect(errorCapturado,

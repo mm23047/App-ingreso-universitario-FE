@@ -17,7 +17,6 @@
     Consulta la fecha, estado y puntaje de tu prueba de admisión.
 </p>
 
-<!-- ── Panel de búsqueda manual ── -->
 <div class="consulta-wrap card mb-lg" id="panel-busqueda">
     <div class="card-header">
         <h3>Consultar resultados de admisión</h3>
@@ -62,7 +61,7 @@
     function generarRecomendacionesHtml(examen) {
         const CONFIG = {
             ADMITIDO: {
-                cls: 'recom-admitido', icon: '🎓', subtitulo: '¡Felicitaciones! Has sido admitido',
+                cls: 'recom-admitido', icon: '', subtitulo: '¡Felicitaciones! Has sido admitido',
                 pasos: [
                     'Presenta tus documentos originales en la Oficina Central de Registros.',
                     'Realiza el pago de matrícula en Colecturía.',
@@ -70,7 +69,7 @@
                 ]
             },
             PENDIENTE: {
-                cls: 'recom-pendiente', icon: '⏳', subtitulo: 'Tu resultado está siendo procesado',
+                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu resultado está siendo procesado',
                 pasos: [
                     'El sistema está calificando tu examen; los puntajes se actualizan periódicamente.',
                     'Vuelve a consultar esta página en 24–48 horas hábiles.',
@@ -78,7 +77,7 @@
                 ]
             },
             NO_ADMITIDO: {
-                cls: 'recom-no-admitido', icon: '📋', subtitulo: 'Opciones disponibles para ti',
+                cls: 'recom-no-admitido', icon: '', subtitulo: 'Opciones disponibles para ti',
                 pasos: [
                     'Infórmate sobre la próxima convocatoria de admisión.',
                     'Explora otras carreras donde tu puntaje podría ser competitivo.',
@@ -87,7 +86,7 @@
             },
             // NUEVO: Escenario UX cuando el examen ya tiene nota calculada pero sigue en proceso de cupo
             CALIFICADO: {
-                cls: 'recom-pendiente', icon: '📝', subtitulo: 'Tu examen ya ha sido calificado',
+                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu examen ya ha sido calificado',
                 pasos: [
                     'Tu nota ha sido registrada en el sistema de manera exitosa.',
                     'Espera a que finalice la etapa actual para conocer la distribución competitiva de cupos.',
@@ -209,7 +208,7 @@
                 </dl>
                 <div class="recom-box recom-pendiente">
                     <div class="recom-titulo">
-                        <span>📋</span>
+                        <span></span>
                         <span>Próximos pasos</span>
                     </div>
                     <p class="recom-subtitulo">Estás inscrito — el examen aún no ha sido realizado</p>
@@ -239,7 +238,7 @@
                 
                 <div class="recom-box recom-pendiente">
                     <div class="recom-titulo">
-                        <span>🚀</span>
+                        <span></span>
                         <span>¿Qué debes hacer ahora?</span>
                     </div>
                     <p class="recom-subtitulo">Sigue estos pasos para activar tu proceso de selección:</p>
@@ -267,12 +266,14 @@
 
             if      (tipo === 'examenes')      listaEl.innerHTML = datos.map(renderExamen).join('');
             else if (tipo === 'inscripciones') listaEl.innerHTML = datos.map(renderInscritoSinExamen).join('');
-            // NUEVA CONDICIÓN
             else if (tipo === 'solo_registrado') listaEl.innerHTML = renderSoloRegistrado(datos); 
-            // TEXTO MEJORADO PARA CUANDO EL DUI/CORREO DE PLANO NO EXISTE
             else    mostrarMensaje('⚠ No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
         } catch (error) {
-            mostrarMensaje(`⚠ Error al consultar: ${error.message}`);
+            const esCaida = error instanceof TypeError && error.message.includes('fetch');
+            mostrarMensaje(esCaida
+                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
+                : `Error al consultar resultados: ${error.message}`
+            );
         }
     };
 

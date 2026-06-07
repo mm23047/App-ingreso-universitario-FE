@@ -37,7 +37,7 @@
     const renderError = (err) => {
         const esCaida = err instanceof TypeError && err.message.includes('fetch');
         lista.innerHTML = esCaida
-            ? `<p class="text-danger text-center">⚠ Backend no disponible — comprueba que el servidor esté encendido.</p>`
+            ? `<p class="text-danger text-center">Backend no disponible — comprueba que el servidor esté encendido.</p>`
             : `<p class="text-danger text-center">Error al cargar las carreras: ${err.message}</p>`;
     };
 

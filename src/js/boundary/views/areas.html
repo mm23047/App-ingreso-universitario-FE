@@ -57,7 +57,7 @@
         const renderError = (err) => {
             const esCaida = err instanceof TypeError && err.message.includes('fetch');
             listaEl.innerHTML = esCaida
-                ? '<p class="text-danger text-center">⚠ Backend no disponible — comprueba que el servidor esté encendido.</p>'
+                ? '<p class="text-danger text-center">Backend no disponible — comprueba que el servidor esté encendido.</p>'
                 : `<p class="text-danger text-center">Error al cargar áreas: ${err.message}</p>`;
         };
 

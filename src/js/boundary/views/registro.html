@@ -104,7 +104,7 @@
 
 <!-- ── Panel: DUI/correo duplicado ── -->
 <div id="panel-duplicado" class="alerta-duplicado hidden">
-    <h3>⚠ Ya existe una cuenta asociada a estos datos</h3>
+    <h3>Ya existe una cuenta asociada a estos datos</h3>
     <p class="mb-md">
         Los datos ingresados (DUI o correo) ya están registrados en el sistema.<br>
         Si ya tienes una cuenta, puedes recuperar el acceso para consultar o continuar tu proceso de admisión.
@@ -121,7 +121,7 @@
 
 <!-- ── Panel: Confirmación de éxito ── -->
 <div id="panel-exito" class="exito-panel hidden">
-    <h2>✓ Registro completado</h2>
+    <h2>Registro completado</h2>
     <p>
         Tu perfil de aspirante fue creado y quedaste inscrito en el proceso de admisión.
     </p>
@@ -177,7 +177,7 @@
         })
         .catch(() => {
             estadoCarreras.innerHTML =
-                '<span class="text-danger">⚠ No se pudieron cargar las carreras. Verifica la conexión.</span>';
+                '<span class="text-danger">No se pudieron cargar las carreras. Verifica la conexión.</span>';
         });
 
     // ── Nombre de carrera por id (para mostrar en el resumen) ──

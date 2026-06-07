@@ -84,10 +84,10 @@ _itemTemplate.innerHTML = `
 `;
 
 const ICONOS = {
-    success: '✅',
-    error:   '❌',
-    warning: '⚠️',
-    info:    'ℹ️'
+    success: '',
+    error:   '',
+    warning: '',
+    info:    ''
 };
 
 class NotificacionToast extends HTMLElement {
