@@ -32,6 +32,7 @@ async function inicializarPruebas() {
         await import('./unit/control/inscripciones_controller.unit.test.js');
         await import('./unit/control/examen_controller.unit.test.js');
         await import('./unit/control/areas_controller.unit.test.js');
+        await import('./unit/control/procesos_controller.unit.test.js');
 
         // Infraestructura
         await import('./unit/infra/local_storage_dao.unit.test.js');
