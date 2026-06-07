@@ -44,15 +44,5 @@
             "preLaunchTask": "lanzarMocha",
             "postDebugTask": "detenerBrowserSync"
         },
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "Integración — Auditoría Completa",
-            "url": "http://localhost:3000/src/test/js/integration_tests_all.html",
-            "webRoot": "${workspaceFolder}/src",
-            "runtimeExecutable": "C:\\Users\\estua\\AppData\\Local\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
-            "preLaunchTask": "lanzarMocha",
-            "postDebugTask": "detenerBrowserSync"
-        }
     ]
 }
