@@ -102,7 +102,7 @@
             const { procesos, avisos } = await ctrl.cargar();
             if (avisos.length) {
                 banner.style.display = 'block';
-                banner.textContent = `⚠ Datos incompletos: no se pudieron cargar ${avisos.join(' y ')}.`;
+                banner.textContent = `Datos incompletos: no se pudieron cargar ${avisos.join(' y ')}.`;
             }
             _todos = procesos;
             generarFiltrosAnio(_todos);
@@ -121,7 +121,7 @@
         if (!lista.length) {
             grid.innerHTML = `
                 <div class="ps-empty">
-                    <div class="ps-empty-icon">📋</div>
+                    <div class="ps-empty-icon"></div>
                     <p class="ps-empty-title">No se encontraron procesos.</p>
                     <p class="ps-empty-desc">
                         Intenta con otro término de búsqueda o cambia el filtro de año.
@@ -291,7 +291,7 @@
     function mostrarError(msg) {
         grid.innerHTML = `
             <div class="ps-empty">
-                <div class="ps-empty-icon">⚠️</div>
+                <div class="ps-empty-icon"></div>
                 <p class="ps-empty-title text-danger">${msg}</p>
             </div>`;
     }

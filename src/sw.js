@@ -49,9 +49,9 @@ const _precachear = async (cache) => {
         ASSETS_ESTATICOS.map(async (ruta) => {
             try {
                 await cache.add(ruta);
-                console.log('[SW] ✅ Cacheado:', ruta);
+                console.log('[SW] Cacheado:', ruta);
             } catch (err) {
-                console.error('[SW] ❌ Falló al cachear:', ruta, '→', err.message);
+                console.error('[SW] Falló al cachear:', ruta, '→', err.message);
                 throw err;
             }
         })

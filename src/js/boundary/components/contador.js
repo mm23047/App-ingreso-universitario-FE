@@ -137,7 +137,7 @@ class ContadorComponent extends HTMLElement {
         }
         if (estado) {
             estado.textContent = this.autoIncrementando
-                ? '🔄 Incrementando automáticamente'
+                ? 'Incrementando automáticamente'
                 : '⏸ Pausado';
             estado.className = `estado ${this.autoIncrementando ? 'activo' : 'pausado'}`;
         }

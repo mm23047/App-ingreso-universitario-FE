@@ -64,7 +64,7 @@
     function generarRecomendacionesHtml(examen) {
         const CONFIG = {
             ADMITIDO: {
-                cls: 'recom-admitido', icon: '🎓', subtitulo: '¡Felicitaciones! Has sido admitido',
+                cls: 'recom-admitido', icon: '', subtitulo: '¡Felicitaciones! Has sido admitido',
                 pasos: [
                     'Presenta tus documentos originales en la Oficina Central de Registros.',
                     'Realiza el pago de matrícula en Colecturía.',
@@ -72,7 +72,7 @@
                 ]
             },
             PENDIENTE: {
-                cls: 'recom-pendiente', icon: '⏳', subtitulo: 'Tu resultado está siendo procesado',
+                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu resultado está siendo procesado',
                 pasos: [
                     'El sistema está calificando tu examen; los puntajes se actualizan periódicamente.',
                     'Vuelve a consultar esta página en 24–48 horas hábiles.',
@@ -80,7 +80,7 @@
                 ]
             },
             NO_ADMITIDO: {
-                cls: 'recom-no-admitido', icon: '📋', subtitulo: 'Opciones disponibles para ti',
+                cls: 'recom-no-admitido', icon: '', subtitulo: 'Opciones disponibles para ti',
                 pasos: [
                     'Infórmate sobre la próxima convocatoria de admisión.',
                     'Explora otras carreras donde tu puntaje podría ser competitivo.',
@@ -200,7 +200,7 @@
                 </dl>
                 <div class="recom-box recom-pendiente">
                     <div class="recom-titulo">
-                        <span>📋</span>
+                        <span></span>
                         <span>Próximos pasos</span>
                     </div>
                     <p class="recom-subtitulo">Estás inscrito — el examen aún no ha sido realizado</p>
@@ -242,7 +242,7 @@
         } catch (error) {
             const esCaida = error instanceof TypeError && error.message.includes('fetch');
             mostrarMensaje(esCaida
-                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
+                ? 'Backend no disponible — comprueba que el servidor esté encendido.'
                 : `Error al consultar resultados: ${error.message}`
             );
         }
