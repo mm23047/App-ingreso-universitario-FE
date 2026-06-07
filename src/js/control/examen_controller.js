@@ -169,6 +169,25 @@ class ExamenController {
         }
     }
 
+    async consultarEstadoAspirante(aspiranteId) {
+        if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
+        store.loading = true;
+        try {
+            const examenes = await this.examenRealizadoDao.obtenerPorAspirante(aspiranteId);
+            if (examenes.length) return { tipo: 'examenes', datos: examenes };
+
+            const inscripciones = await this.aspirantesDao.obtenerInscripciones(aspiranteId);
+            if (inscripciones.length) return { tipo: 'inscripciones', datos: inscripciones };
+
+            return { tipo: 'nada', datos: [] };
+        } catch (error) {
+            console.error('Error al consultar estado del aspirante:', error);
+            throw error;
+        } finally {
+            store.loading = false;
+        }
+    }
+
 }
 
 export default ExamenController;

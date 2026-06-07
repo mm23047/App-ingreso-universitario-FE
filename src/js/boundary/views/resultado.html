@@ -305,28 +305,14 @@
         mostrarMensaje('Consultando resultados...');
 
         try {
-            const examenes = await ctrl.consultarResultados(aspiranteId);
+            const { tipo, datos } = await ctrl.consultarEstadoAspirante(aspiranteId);
             msgEstado.classList.add('hidden');
 
-            if (!examenes.length) {
-                const inscripciones = await ctrl.consultarInscripciones(aspiranteId);
-                if (inscripciones.length) {
-                    msgEstado.classList.add('hidden');
-                    listaEl.innerHTML = inscripciones.map(renderInscritoSinExamen).join('');
-                } else {
-                    mostrarMensaje('No se encontró información para este aspirante.');
-                }
-                return;
-            }
-
-            // El backend devuelve los exámenes ordenados por fechaRealizacion DESC
-            listaEl.innerHTML = examenes.map(renderExamen).join('');
+            if      (tipo === 'examenes')      listaEl.innerHTML = datos.map(renderExamen).join('');
+            else if (tipo === 'inscripciones') listaEl.innerHTML = datos.map(renderInscritoSinExamen).join('');
+            else    mostrarMensaje('No se encontró información para este aspirante.');
         } catch (error) {
-            const esCaida = error instanceof TypeError && error.message.includes('fetch');
-            mostrarMensaje(esCaida
-                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
-                : `Error al consultar resultados: ${error.message}`
-            );
+            mostrarMensaje(`⚠ Error al consultar: ${error.message}`);
         }
     };
 
