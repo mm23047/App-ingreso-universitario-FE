@@ -1,5 +1,6 @@
-import EtapasDao from './etapas_dao.js';
-import { store } from '../infra/app_state.js';
+import EtapasDao   from './etapas_dao.js';
+import { store }   from '../infra/app_state.js';
+import { notificar } from '../infra/notificaciones.js';
 
 class EtapasController {
     constructor() {
@@ -12,7 +13,7 @@ class EtapasController {
             return await this.etapasDao.obtenerTodas();
         } catch (error) {
             console.error('Error al cargar etapas:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar etapas: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -30,7 +31,7 @@ class EtapasController {
             return etapa;
         } catch (error) {
             console.error('Error al cargar etapa:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar etapa: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -41,7 +42,7 @@ class EtapasController {
 
     seleccionarEtapa(etapa) {
         if (!etapa?.idEtapaAdmision) {
-            document.querySelector('app-toast')?.show('Etapa inválida', 3000, 'warning');
+            notificar('Etapa inválida', 3000, 'warning');
             return null;
         }
         store.etapa = etapa;

@@ -143,6 +143,54 @@
         msgEstado.classList.remove('hidden');
     };
 
+    function generarRecomendacionesHtml(examen) {
+        const CONFIG = {
+            ADMITIDO: {
+                cls: 'recom-admitido', icon: '🎓', subtitulo: '¡Felicitaciones! Has sido admitido',
+                pasos: [
+                    'Presenta tus documentos originales en la Oficina Central de Registros.',
+                    'Realiza el pago de matrícula en Colecturía.',
+                    'Consulta el sistema en línea para confirmar tu aula y sección.'
+                ]
+            },
+            PENDIENTE: {
+                cls: 'recom-pendiente', icon: '⏳', subtitulo: 'Tu resultado está siendo procesado',
+                pasos: [
+                    'El sistema está calificando tu examen; los puntajes se actualizan periódicamente.',
+                    'Vuelve a consultar esta página en 24–48 horas hábiles.',
+                    'No necesitas realizar ningún trámite adicional mientras esté pendiente.'
+                ]
+            },
+            NO_ADMITIDO: {
+                cls: 'recom-no-admitido', icon: '📋', subtitulo: 'Opciones disponibles para ti',
+                pasos: [
+                    'Infórmate sobre la próxima convocatoria de admisión.',
+                    'Explora otras carreras donde tu puntaje podría ser competitivo.',
+                    'Acude al servicio de orientación vocacional de la universidad.'
+                ]
+            }
+        };
+
+        let estadoClave = examen.estadoAdmision;
+        if (!estadoClave && examen.inscripcionesPrueba?.estado === 'INSCRITO') {
+            estadoClave = 'INSCRITO';
+        }
+
+        const config = CONFIG[estadoClave];
+        if (!config) return '';
+
+        const itemsLista = config.pasos.map(p => `<li>${p}</li>`).join('');
+        return `
+            <div class="recom-box ${config.cls}">
+                <div class="recom-titulo">
+                    <span>${config.icon}</span>
+                    <span>Recomendaciones y siguientes pasos</span>
+                </div>
+                <p class="recom-subtitulo">${config.subtitulo}</p>
+                <ol class="recom-lista">${itemsLista}</ol>
+            </div>`;
+    }
+
     const renderExamen = (ex) => {
         const calificado = ex.puntajeFinal != null;
 
@@ -205,7 +253,7 @@
                     <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>
                 </dl>
                 
-                ${ctrl.generarRecomendacionesHtml(ex)}
+                ${generarRecomendacionesHtml(ex)}
                 
             </div>
         `;

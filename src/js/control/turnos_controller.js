@@ -1,6 +1,7 @@
-import TurnosDao from './turnos_dao.js';
+import TurnosDao      from './turnos_dao.js';
 import LocalStorageDao from './local_storage_dao.js';
-import { store } from '../infra/app_state.js';
+import { store }       from '../infra/app_state.js';
+import { notificar }   from '../infra/notificaciones.js';
 
 class TurnosController {
     constructor() {
@@ -17,7 +18,7 @@ class TurnosController {
             return turnos;
         } catch (error) {
             console.error('Error al cargar turnos:', error);
-            document.querySelector('app-toast')?.show(
+            notificar(
                 `Error al cargar turnos: ${error.message}`, 4000, 'error'
             );
             throw error;
@@ -38,12 +39,12 @@ class TurnosController {
     seleccionarTurno(idTurnoExamen) {
         const turno = this.buscarTurnoEnMemoria(idTurnoExamen);
         if (!turno) {
-            document.querySelector('app-toast')?.show('Turno no encontrado', 3000, 'warning');
+            notificar('Turno no encontrado', 3000, 'warning');
             return null;
         }
         store.turnoSeleccionado = turno;
         this.guardarSeleccionTurno(idTurnoExamen);
-        document.querySelector('app-toast')?.show(
+        notificar(
             `Turno seleccionado: ${turno.nombreTurno}`, 2500, 'success'
         );
         return turno;
