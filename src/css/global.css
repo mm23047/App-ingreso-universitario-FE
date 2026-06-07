@@ -184,9 +184,11 @@ input:focus, select:focus, textarea:focus {
 .text-danger  { color: var(--color-danger); }
 .text-success { color: var(--color-secondary); }
 
+.mt-xs { margin-top: var(--space-xs); }
 .mt-sm { margin-top: var(--space-sm); }
 .mt-md { margin-top: var(--space-md); }
 .mt-lg { margin-top: var(--space-lg); }
+.mb-xs { margin-bottom: var(--space-xs); }
 .mb-sm { margin-bottom: var(--space-sm); }
 .mb-md { margin-bottom: var(--space-md); }
 .mb-lg { margin-bottom: var(--space-lg); }
@@ -272,7 +274,83 @@ input:focus, select:focus, textarea:focus {
 .recom-no-admitido .recom-titulo { color:var(--color-danger); }
 .recom-no-admitido .recom-subtitulo { color:#991B1B; }
 
-/* NUEVO: Estado Inscrito (Celeste Info) */
-.recom-inscrito { background:#F0F9FF; border-color:#0EA5E9; color:#0369A1; }
-.recom-inscrito .recom-titulo { color:#0284C7; }
-.recom-inscrito .recom-subtitulo { color:#0C4A6E; }
+
+/* ── App Shell ── */
+.app-header {
+    background: var(--color-primary);
+    color: white;
+    padding: var(--space-md) 0;
+}
+.app-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+.app-header__titulo {
+    font-size: 1.25rem;
+    color: white;
+    margin: 0;
+}
+.app-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+.app-nav a {
+    color: white;
+    margin-left: var(--space-md);
+}
+.app-nav a:hover {
+    color: white;
+    text-decoration: underline;
+}
+.app-footer {
+    background: var(--color-primary-dark);
+    color: white;
+    text-align: center;
+    padding: var(--space-md);
+    margin-top: auto;
+}
+.app-footer p {
+    margin: 0;
+    font-size: .85rem;
+}
+.app-content {
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-xl);
+}
+
+/* ── Toolbar ── */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+/* ── Badge base + variantes ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: .75rem;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+.badge-success { background: #D1FAE5; color: #065F46; }
+.badge-warning { background: #FEF3C7; color: #92400E; }
+.badge-info    { background: #DBEAFE; color: #1E40AF; }
+.badge-danger  { background: #FEE2E2; color: #991B1B; }
+.badge-neutral { background: #F3F4F6; color: var(--color-text-muted); }
+
+/* ── Botón warning ── */
+.btn-warning {
+    background: #D97706;
+    color: white;
+    border: 1.5px solid #B45309;
+}
+.btn-warning:hover { background: #B45309; }
