@@ -167,39 +167,60 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             expect(p.jornadas).to.be.empty;
         });
 
-        it('debe extraer el nombreSede de cada aula disponible y asociarlo a la prueba a través del turno', () => {
+        it('debe formatear la sede como "NombreSede — Departamento" cuando aula tiene ambos campos', () => {
             const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
             const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
             const disps   = [
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A101' } },
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Santa Ana', codigoAulaApi: 'AULA-B202' } }
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central',    departamento: 'San Salvador', codigoAulaApi: 'AULA-A101' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Santa Ana',  departamento: 'Santa Ana',    codigoAulaApi: 'AULA-B202' } }
             ];
             const [p] = ctrl._ensamblar(pruebas, turnos, disps);
-            expect(p.sedes).to.include('Sede Central');
-            expect(p.sedes).to.include('Sede Santa Ana');
+            expect(p.sedes).to.include('Sede Central — San Salvador');
+            expect(p.sedes).to.include('Sede Santa Ana — Santa Ana');
         });
 
         it('debe eliminar sedes duplicadas cuando la misma sede aparece más de una vez para el mismo turno', () => {
             const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
             const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
             const disps   = [
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A101' } },
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A102' } }
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', departamento: 'San Salvador', codigoAulaApi: 'AULA-A101' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', departamento: 'San Salvador', codigoAulaApi: 'AULA-A102' } }
             ];
             const [p] = ctrl._ensamblar(pruebas, turnos, disps);
-            expect(p.sedes.filter(s => s === 'Sede Central')).to.have.lengthOf(1);
+            expect(p.sedes.filter(s => s === 'Sede Central — San Salvador')).to.have.lengthOf(1);
         });
 
         it('debe omitir disponibilidades sin nombreSede definido sin romper el ensamblado', () => {
             const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
             const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
             const disps   = [
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', departamento: 'San Salvador' } },
                 { turnoExamen: { idTurnoExamen: 't1' }, aula: {} },
                 { turnoExamen: { idTurnoExamen: 't1' }, aula: null }
             ];
             const [p] = ctrl._ensamblar(pruebas, turnos, disps);
-            expect(p.sedes).to.deep.equal(['Sede Central']);
+            expect(p.sedes).to.deep.equal(['Sede Central — San Salvador']);
+        });
+
+        it('debe usar codigoAulaApi como sede cuando nombreSede es null', () => {
+            const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
+            const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
+            const disps   = [
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: null, codigoAulaApi: 'AULA-X999', departamento: 'Cuscatlán' } }
+            ];
+            const [p] = ctrl._ensamblar(pruebas, turnos, disps);
+            expect(p.sedes).to.deep.equal(['AULA-X999']);
+        });
+
+        it('debe mostrar "NombreSede —" sin espacio sobrante cuando departamento no está definido (trimEnd)', () => {
+            const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
+            const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
+            const disps   = [
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Norte' } }
+            ];
+            const [p] = ctrl._ensamblar(pruebas, turnos, disps);
+            expect(p.sedes[0]).to.equal('Sede Norte —');
+            expect(p.sedes[0]).to.not.match(/ $/, 'no debe tener espacio en blanco al final');
         });
     });
 
