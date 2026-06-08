@@ -5,11 +5,12 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
     let toast;
 
     // ── Helpers de acceso al Shadow DOM ────────────────────────────────────
-    // El toast usa dual Shadow DOM: el host tiene .toast-wrapper,
-    // y cada ítem individual tiene su propio shadowRoot con .toast-item.
     const wrapper = () => toast.shadowRoot.querySelector('.toast-wrapper');
 
-    const getShadowItem = (index = 0) => wrapper().children[index] || null;
+    // ¡AQUÍ ESTÁ LA MAGIA! Filtramos los hijos para ignorar el <slot>
+    const getShadowItems = () => Array.from(wrapper().children).filter(el => el.tagName !== 'SLOT');
+
+    const getShadowItem = (index = 0) => getShadowItems()[index] || null;
 
     const getItem = (index = 0) => {
         const si = getShadowItem(index);
@@ -22,6 +23,8 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
     };
 
     beforeEach(() => {
+        // Limpiamos la pantalla completamente por seguridad
+        document.body.innerHTML = ''; 
         toast = document.createElement('app-toast');
         document.body.appendChild(toast);
     });
@@ -34,7 +37,7 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
     describe('Mostrar mensajes — show()', () => {
         it('show() agrega un ítem al wrapper', () => {
             toast.show('Mensaje', 0);
-            expect(wrapper().children.length).to.equal(1);
+            expect(getShadowItems().length).to.equal(1); // Actualizado
         });
 
         it('show() establece el texto del mensaje en .toast-message', () => {
@@ -58,7 +61,7 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
             toast.show('Primero', 0);
             toast.show('Segundo', 0);
             toast.show('Tercero', 0);
-            expect(wrapper().children.length).to.equal(3);
+            expect(getShadowItems().length).to.equal(3); // Actualizado
         });
 
         it('cada ítem muestra su propio texto de mensaje', () => {
@@ -119,7 +122,6 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
             toast.show('Cerrando', 0);
             const item     = getItem();
             const closeBtn = getShadowItem().shadowRoot.querySelector('.toast-close');
-            // Forzar el estado visible para que la prueba sea significativa
             item.classList.add('visible');
             closeBtn.click();
             expect(item.classList.contains('visible')).to.be.false;

@@ -246,21 +246,21 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             expect(resultado.avisos.some(a => a.includes('turnos'))).to.be.true;
         });
 
-        it('debe poblar _turnosBrutos con los datos del endpoint de turnos al cargar exitosamente', async () => {
+    it('debe poblar _turnosBrutos con los datos del endpoint de turnos al cargar exitosamente', async () => {
             const mockTurnos = [{ idTurnoExamen: 't1' }, { idTurnoExamen: 't2' }];
             sinon.stub(window, 'fetch');
-            let callCount = 0;
-            window.fetch = () => {
-                callCount++;
-                const data = callCount === 2 ? mockTurnos : [];
-                return Promise.resolve({ ok: true, json: () => Promise.resolve(data) });
+            
+            window.fetch = (url) => {
+                if (url.includes('turnos') && !url.includes('aulas_turnos')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTurnos) });
+                }
+                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
             };
 
             await ctrl.cargar();
 
             expect(ctrl._turnosBrutos).to.deep.equal(mockTurnos);
         });
-
         it('debe dejar _turnosBrutos vacío cuando el endpoint de turnos falla', async () => {
             sinon.stub(window, 'fetch');
             let callCount = 0;
@@ -276,13 +276,18 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             expect(ctrl._turnosBrutos).to.be.an('array').that.is.empty;
         });
 
-        it('debe retornar procesos ensamblados con los datos recibidos del endpoint de pruebas', async () => {
+    it('debe retornar procesos ensamblados con los datos recibidos del endpoint de pruebas', async () => {
+            console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXP"); 
+            
             const mockPruebas = [{ idPruebaAdmision: 'p1', nombrePrueba: 'Proceso 2026', anio: 2026, activa: true }];
             sinon.stub(window, 'fetch');
-            let callCount = 0;
-            window.fetch = () => {
-                callCount++;
-                return Promise.resolve({ ok: true, json: () => Promise.resolve(callCount === 1 ? mockPruebas : []) });
+            
+            // Evaluamos la URL directamente
+            window.fetch = (url) => {
+                if (url.includes('pruebas_admision')) {
+                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPruebas) });
+                }
+                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
             };
 
             const resultado = await ctrl.cargar();
