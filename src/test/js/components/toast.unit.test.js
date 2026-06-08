@@ -23,8 +23,6 @@ describe('NotificacionToast — app-toast — Pruebas Unitarias', () => {
     };
 
     beforeEach(() => {
-        // Limpiamos la pantalla completamente por seguridad
-        document.body.innerHTML = ''; 
         toast = document.createElement('app-toast');
         document.body.appendChild(toast);
     });
