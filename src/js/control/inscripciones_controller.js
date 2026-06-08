@@ -108,8 +108,8 @@ class InscripcionesController {
                     );
                     carrerasGuardadas.push(elegida);
                 } catch (errCarrera) {
-                    // 409 = carrera o prioridad duplicada; continúa con las demás
                     console.warn(`No se pudo registrar carrera ${idCarrera} (prioridad ${prioridad}):`, errCarrera.message);
+                    notificar(`No se pudo registrar la carrera con prioridad ${prioridad}: ${errCarrera.mensajeNegocio ?? errCarrera.message}`, 5000, 'warning');
                 }
             }
             store.carrerasElegidas = carrerasGuardadas;

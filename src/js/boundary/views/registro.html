@@ -211,6 +211,12 @@
             return;
         }
 
+        const valoresCarreras = selectIds.map(id => document.getElementById(id).value).filter(v => v !== '');
+        if (new Set(valoresCarreras).size < valoresCarreras.length) {
+            document.querySelector('app-toast')?.show('No puedes seleccionar la misma carrera en más de una prioridad.', 4000, 'warning');
+            return;
+        }
+
         btnRegistrar.disabled = true;
         btnRegistrar.textContent = 'Registrando...';
 
