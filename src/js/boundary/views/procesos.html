@@ -13,7 +13,7 @@
      │                                                             │
      │ 3. GET /v1/aulas_turnos/disponibilidad                      │
      │    → [{ idDisponibilidadAulaTurno: { idAula, idTurno },     │
-     │         aula: { codigoAulaApi, ... },                       │
+     │         aula: { nombreSede, departamento, municipio, ... },  │
      │         turnoExamen: { idTurnoExamen, ... } }]              │
      └─────────────────────────────────────────────────────────────┘
 
@@ -28,7 +28,7 @@
        fechaFin:    string|null,   // max(turno.fecha)
        jornadas:    string[],      // nombreTurno únicos
        horarios:    string[],      // "HH:MM – HH:MM" únicos
-       sedes:       string[]       // codigoAulaApi únicos
+       sedes:       string[]       // nombreSede únicos
      }
 
      Campos sin endpoint disponible (ocultos):
