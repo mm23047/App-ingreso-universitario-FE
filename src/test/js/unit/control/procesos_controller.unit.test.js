@@ -167,27 +167,39 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             expect(p.jornadas).to.be.empty;
         });
 
-        it('debe extraer y asociar sedes de disponibilidad a la prueba a través del turno', () => {
+        it('debe extraer el nombreSede de cada aula disponible y asociarlo a la prueba a través del turno', () => {
             const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
             const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
             const disps   = [
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { codigoAulaApi: 'FMO' } },
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { codigoAulaApi: 'FCC' } }
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A101' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Santa Ana', codigoAulaApi: 'AULA-B202' } }
             ];
             const [p] = ctrl._ensamblar(pruebas, turnos, disps);
-            expect(p.sedes).to.include('FMO');
-            expect(p.sedes).to.include('FCC');
+            expect(p.sedes).to.include('Sede Central');
+            expect(p.sedes).to.include('Sede Santa Ana');
         });
 
         it('debe eliminar sedes duplicadas cuando la misma sede aparece más de una vez para el mismo turno', () => {
             const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
             const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
             const disps   = [
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { codigoAulaApi: 'FMO' } },
-                { turnoExamen: { idTurnoExamen: 't1' }, aula: { codigoAulaApi: 'FMO' } }
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A101' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central', codigoAulaApi: 'AULA-A102' } }
             ];
             const [p] = ctrl._ensamblar(pruebas, turnos, disps);
-            expect(p.sedes.filter(s => s === 'FMO')).to.have.lengthOf(1);
+            expect(p.sedes.filter(s => s === 'Sede Central')).to.have.lengthOf(1);
+        });
+
+        it('debe omitir disponibilidades sin nombreSede definido sin romper el ensamblado', () => {
+            const pruebas = [{ idPruebaAdmision: 'p1', activa: true }];
+            const turnos  = [{ idTurnoExamen: 't1', pruebaAdmision: { idPruebaAdmision: 'p1' } }];
+            const disps   = [
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: { nombreSede: 'Sede Central' } },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: {} },
+                { turnoExamen: { idTurnoExamen: 't1' }, aula: null }
+            ];
+            const [p] = ctrl._ensamblar(pruebas, turnos, disps);
+            expect(p.sedes).to.deep.equal(['Sede Central']);
         });
     });
 

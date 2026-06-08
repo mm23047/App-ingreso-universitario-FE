@@ -14,7 +14,7 @@ describe('AppProcesoCard — app-proceso-card — Pruebas Unitarias', () => {
         fechaFin:    '2025-06-30',
         jornadas: ['Matutino', 'Vespertino'],
         horarios: ['07:00 – 10:00', '13:00 – 16:00'],
-        sedes: ['FMO', 'FCA', 'FC']
+        sedes: ['Sede Central', 'Sede Occidente', 'Sede Oriente']
     };
 
     const procesoInactivo = {
@@ -143,8 +143,8 @@ describe('AppProcesoCard — app-proceso-card — Pruebas Unitarias', () => {
             card.proceso = procesoActivo;
             const chips = [...sr().querySelectorAll('.ps-chip-sede')];
             const textos = chips.map(c => c.textContent);
-            expect(textos).to.include('FMO');
-            expect(textos).to.include('FCA');
+            expect(textos).to.include('Sede Central');
+            expect(textos).to.include('Sede Occidente');
         });
 
         it('sedes vacías debe mostrar chip "Sin sedes asignadas"', () => {

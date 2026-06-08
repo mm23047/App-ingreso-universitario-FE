@@ -83,7 +83,7 @@ class ProcesosController {
         const sedesPorTurno = {};
         for (const d of disps) {
             const tid  = d.turnoExamen?.idTurnoExamen ?? d.idDisponibilidadAulaTurno?.idTurno;
-            const sede = d.aula?.codigoAulaApi;
+            const sede = d.aula?.nombreSede;
             if (tid && sede) (sedesPorTurno[tid] ??= new Set()).add(sede);
         }
 
