@@ -37,6 +37,11 @@ async function inicializarPruebas() {
         // Infraestructura
         await import('./unit/infra/local_storage_dao.unit.test.js');
 
+        // Web Components — participan en los flujos evaluados del parcial
+        await import('./components/arbol.unit.test.js');         // flujo: Áreas
+        await import('./components/proceso-card.unit.test.js'); // flujo: Procesos
+        await import('./components/toast.unit.test.js');        // flujos: Registro, Resultado
+
         mocha.run();
     } catch (error) {
         console.error('Error al cargar pruebas:', error);
