@@ -98,4 +98,68 @@ describe('InscripcionesDao - Pruebas Unitarias con Stubs', () => {
             expect(typeof inscripcionesDao.obtenerPorId).to.equal('function');
         });
     });
+
+    // ── eliminar con Stub ────────────────────────────────────────────────────
+    describe('eliminar con Stub', () => {
+        const ID = 'uuid-inscripcion-borrar';
+
+        it('debe usar método DELETE', async () => {
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 204 }); };
+
+            await inscripcionesDao.eliminar(ID);
+
+            expect(capturedOpts.method).to.equal('DELETE');
+        });
+
+        it('URL debe incluir inscripciones_prueba/{id}', async () => {
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 204 }); };
+
+            await inscripcionesDao.eliminar(ID);
+
+            expect(capturedUrl).to.include(`inscripciones_prueba/${ID}`);
+        });
+
+        it('respuesta 204 resuelve sin valor de retorno', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 204 });
+
+            const resultado = await inscripcionesDao.eliminar(ID);
+
+            expect(resultado).to.be.undefined;
+        });
+
+        it('debe lanzar error con httpStatus 409 cuando la inscripción no puede eliminarse', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 409 });
+
+            try {
+                await inscripcionesDao.eliminar(ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(409);
+            }
+        });
+
+        it('debe lanzar error con httpStatus para cualquier respuesta no 204', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500 });
+
+            try {
+                await inscripcionesDao.eliminar(ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe lanzar error si id no se proporciona', async () => {
+            try {
+                await inscripcionesDao.eliminar(null);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+    });
 });

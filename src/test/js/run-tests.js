@@ -36,6 +36,8 @@ async function inicializarPruebas() {
 
         // Infraestructura
         await import('./unit/infra/local_storage_dao.unit.test.js');
+        await import('./unit/infra/app_state.unit.test.js');
+        await import('./unit/infra/router.unit.test.js');
 
         // Web Components — participan en los flujos evaluados del parcial
         await import('./components/arbol.unit.test.js');         // flujo: Áreas

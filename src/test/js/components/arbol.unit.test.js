@@ -202,4 +202,31 @@ describe('Arbol — app-arbol — Pruebas Unitarias', () => {
             expect(cabecera().getAttribute('aria-expanded')).to.equal('false');
         });
     });
+
+    // ── Click en tema-cabecera nivel 2 (stopPropagation) ─────────────────────
+    describe('Expansión de tema con subtemas (nivel 2)', () => {
+        beforeEach(() => { arbol.area = areaConSubtemas; });
+
+        it('al hacer clic en tema-cabecera, el tema expandible recibe la clase "abierto"', () => {
+            const temaCab = arbol.shadowRoot.querySelector('.tema-cabecera');
+            temaCab.click();
+            const temaItem = arbol.shadowRoot.querySelector('.tema-item.tiene-subtemas');
+            expect(temaItem.classList.contains('abierto')).to.be.true;
+        });
+
+        it('el segundo clic en tema-cabecera elimina la clase "abierto" (toggle)', () => {
+            const temaCab = arbol.shadowRoot.querySelector('.tema-cabecera');
+            temaCab.click();
+            temaCab.click();
+            const temaItem = arbol.shadowRoot.querySelector('.tema-item.tiene-subtemas');
+            expect(temaItem.classList.contains('abierto')).to.be.false;
+        });
+
+        it('el clic en tema-cabecera NO propaga al toggle del área (stopPropagation)', () => {
+            const temaCab = arbol.shadowRoot.querySelector('.tema-cabecera');
+            temaCab.click();
+            // El área NO debe haberse abierto: aria-expanded del área sigue en "false"
+            expect(cabecera().getAttribute('aria-expanded')).to.equal('false');
+        });
+    });
 });

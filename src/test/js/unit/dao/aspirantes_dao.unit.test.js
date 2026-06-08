@@ -570,4 +570,79 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
             }
         });
     });
+
+    // ── eliminar con Stub ────────────────────────────────────────────────────
+    describe('eliminar con Stub', () => {
+        const ID = 'uuid-aspirante-borrar';
+
+        it('debe usar método DELETE', async () => {
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 204 }); };
+
+            await aspirantesDao.eliminar(ID);
+
+            expect(capturedOpts.method).to.equal('DELETE');
+        });
+
+        it('URL debe incluir aspirantes/{id}', async () => {
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 204 }); };
+
+            await aspirantesDao.eliminar(ID);
+
+            expect(capturedUrl).to.include(`aspirantes/${ID}`);
+        });
+
+        it('respuesta 204 resuelve sin valor de retorno', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 204 });
+
+            const resultado = await aspirantesDao.eliminar(ID);
+
+            expect(resultado).to.be.undefined;
+        });
+
+        it('debe lanzar error con httpStatus 409 cuando el aspirante tiene inscripciones activas', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 409 });
+
+            try {
+                await aspirantesDao.eliminar(ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(409);
+            }
+        });
+
+        it('debe lanzar error con httpStatus para cualquier respuesta no 204', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500 });
+
+            try {
+                await aspirantesDao.eliminar(ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe lanzar error si id no se proporciona', async () => {
+            try {
+                await aspirantesDao.eliminar(null);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe propagar el error HTTP sin envolverlo en otro error', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 404 });
+
+            try {
+                await aspirantesDao.eliminar(ID);
+                expect.fail();
+            } catch (e) {
+                expect(e.httpStatus).to.equal(404);
+            }
+        });
+    });
 });
