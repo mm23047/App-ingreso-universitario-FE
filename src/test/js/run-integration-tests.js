@@ -22,6 +22,8 @@ async function inicializarPruebasIntegracion() {
         await import('./integration/server-on/turnos_controller.integration.test.js');
         await import('./integration/server-on/inscripciones_controller.integration.test.js');
         await import('./integration/server-on/procesos_controller.integration.test.js');
+        await import('./integration/server-on/examen_dao.integration.test.js');
+        await import('./integration/server-on/examen_controller.integration.test.js');
 
         mocha.run();
     } catch (error) {
