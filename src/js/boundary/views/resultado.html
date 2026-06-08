@@ -162,7 +162,7 @@
 
         const alertaInconsistencia = (calificado && estadoInscripcion === 'INSCRITO')
             ? `<div class="alerta-datos" role="alert">
-                   ⚠ El puntaje está registrado pero el estado de tu inscripción no se actualizó correctamente.
+                   El puntaje está registrado pero el estado de tu inscripción no se actualizó correctamente.
                    Comunícate con la Oficina de Admisiones para verificar tu expediente.
                </div>`
             : '';
@@ -284,11 +284,11 @@
             if      (tipo === 'examenes')      listaEl.innerHTML = datos.map(renderExamen).join('');
             else if (tipo === 'inscripciones') listaEl.innerHTML = datos.map(renderInscritoSinExamen).join('');
             else if (tipo === 'solo_registrado') listaEl.innerHTML = renderSoloRegistrado(datos); 
-            else    mostrarMensaje('⚠ No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
+            else    mostrarMensaje('No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
         } catch (error) {
             const esCaida = error instanceof TypeError && error.message.includes('fetch');
             mostrarMensaje(esCaida
-                ? '⚠ Backend no disponible — comprueba que el servidor esté encendido.'
+                ? 'Backend no disponible — comprueba que el servidor esté encendido.'
                 : `Error al consultar resultados: ${error.message}`
             );
         }
