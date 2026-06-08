@@ -298,8 +298,6 @@ describe('ProcesosController - Pruebas Unitarias', () => {
         });
 
     it('debe retornar procesos ensamblados con los datos recibidos del endpoint de pruebas', async () => {
-            console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXP"); 
-            
             const mockPruebas = [{ idPruebaAdmision: 'p1', nombrePrueba: 'Proceso 2026', anio: 2026, activa: true }];
             sinon.stub(window, 'fetch');
             

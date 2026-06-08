@@ -2,6 +2,7 @@
 import sinon from '../../lib/sinon/sinon.js';
 import AspirantesDao from '../../../../js/control/aspirantes_dao.js';
 import Aspirante from '../../../../js/entity/Aspirante.js';
+import InscripcionPrueba from '../../../../js/entity/InscripcionPrueba.js';
 
 describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
     let aspirantesDao;
@@ -474,6 +475,98 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
                 expect.fail();
             } catch (e) {
                 expect(e.httpStatus).to.equal(400);
+            }
+        });
+    });
+
+    // ── obtenerInscripciones con Stub ────────────────────────────────────────
+    describe('obtenerInscripciones con Stub', () => {
+        const ASPIRANTE_ID = 'uuid-aspirante-1';
+
+        const mockInscripcionesData = [
+            {
+                idInscripcionPrueba: 'uuid-insc-1',
+                aspiranteDato:       { id: ASPIRANTE_ID, nombres: 'Juan' },
+                pruebaAdmision:      { idPruebaAdmision: 'uuid-prueba-1' },
+                estado:              'INSCRITO'
+            }
+        ];
+
+        it('URL debe incluir aspirantes/{aspiranteId}/inscripciones', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
+
+            await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(capturedUrl).to.include(`aspirantes/${ASPIRANTE_ID}/inscripciones`);
+        });
+
+        it('debe usar método GET', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedOpts;
+            window.fetch = (url, opts) => { capturedOpts = opts; return Promise.resolve({ status: 200, json: () => Promise.resolve([]) }); };
+
+            await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(capturedOpts.method).to.equal('GET');
+        });
+
+        it('debe retornar instancias de InscripcionPrueba cuando el servidor responde 200', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve(mockInscripcionesData) });
+
+            const resultado = await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(resultado).to.be.an('array');
+            expect(resultado.length).to.equal(1);
+            expect(resultado[0]).to.be.instanceOf(InscripcionPrueba);
+        });
+
+        it('debe mapear idInscripcionPrueba, aspiranteDato, pruebaAdmision y estado correctamente', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve(mockInscripcionesData) });
+
+            const resultado = await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(resultado[0].idInscripcionPrueba).to.equal('uuid-insc-1');
+            expect(resultado[0].aspiranteDato.id).to.equal(ASPIRANTE_ID);
+            expect(resultado[0].pruebaAdmision.idPruebaAdmision).to.equal('uuid-prueba-1');
+            expect(resultado[0].estado).to.equal('INSCRITO');
+        });
+
+        it('debe retornar array vacío con status 404 — aspirante sin inscripciones no es un error', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 404 });
+
+            const resultado = await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(resultado).to.deep.equal([]);
+        });
+
+        it('debe retornar array vacío cuando el servidor responde 200 con lista vacía', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve([]) });
+
+            const resultado = await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+
+            expect(resultado).to.be.an('array');
+            expect(resultado.length).to.equal(0);
+        });
+
+        it('debe lanzar error si aspiranteId no se proporciona', async () => {
+            try {
+                await aspirantesDao.obtenerInscripciones(null);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error cuando el servidor responde 500', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500 });
+
+            try {
+                await aspirantesDao.obtenerInscripciones(ASPIRANTE_ID);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
             }
         });
     });
