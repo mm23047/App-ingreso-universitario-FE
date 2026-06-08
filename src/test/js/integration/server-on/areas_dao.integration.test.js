@@ -2,6 +2,7 @@ import { expect }           from '../../lib/chai/index.js';
 import AreasConocimientoDao  from '../../../../js/control/areas_dao.js';
 import PruebasAdmisionDao    from '../../../../js/control/pruebas_admision_dao.js';
 import AreaConocimiento      from '../../../../js/entity/AreaConocimiento.js';
+import Tema                  from '../../../../js/entity/Tema.js';
 
 describe('AreasConocimientoDao — Integración con backend', () => {
     let dao;
@@ -27,6 +28,37 @@ describe('AreasConocimientoDao — Integración con backend', () => {
                 expect(resultado[0]).to.be.instanceOf(AreaConocimiento);
                 expect(resultado[0].idAreaConocimiento).to.exist;
                 expect(resultado[0].nombreArea).to.be.a('string').and.not.equal('');
+            }
+        });
+    });
+
+    // ── GET /areas/{idArea}/temas — temas de un área ─────────────────────────
+
+    describe('GET /areas/{idArea}/temas — obtenerTemasPorArea()', () => {
+
+        it('debe retornar un array de instancias de Tema cuando el backend responde 200', async function () {
+            this.timeout(8000);
+
+            const areas = await dao.obtenerTodas();
+            if (areas.length === 0) { this.skip(); return; }
+
+            // Sin try/catch: TypeError si el servidor está apagado → test falla correctamente
+            const resultado = await dao.obtenerTemasPorArea(areas[0].idAreaConocimiento);
+
+            expect(resultado).to.be.an('array');
+            if (resultado.length > 0) {
+                expect(resultado[0]).to.be.instanceOf(Tema);
+                expect(resultado[0].idTema).to.exist;
+                expect(resultado[0].nombreTema).to.be.a('string');
+            }
+        });
+
+        it('debe lanzar error con mensaje descriptivo si no se proporciona idArea', async function () {
+            try {
+                await dao.obtenerTemasPorArea(null);
+                expect.fail('Debía lanzar error');
+            } catch (error) {
+                expect(error.message).to.include('requerido');
             }
         });
     });

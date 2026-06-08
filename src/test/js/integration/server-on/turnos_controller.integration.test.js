@@ -37,4 +37,32 @@ describe('TurnosController — Integración con backend', () => {
             }
         });
     });
+
+    // ── seleccionarTurno() ────────────────────────────────────────────────────
+
+    describe('seleccionarTurno() — búsqueda en memoria y actualización del store', () => {
+
+        it('debe retornar null cuando el id no corresponde a ningún turno cargado', async function () {
+            this.timeout(8000);
+
+            await ctrl.cargarTodosLosTurnos();
+            const resultado = ctrl.seleccionarTurno('id-turno-inexistente');
+
+            expect(resultado).to.be.null;
+        });
+
+        it('debe retornar la instancia de Turno y actualizar store.turnoSeleccionado cuando el id es válido', async function () {
+            this.timeout(8000);
+
+            const turnos = await ctrl.cargarTodosLosTurnos();
+            if (turnos.length === 0) { this.skip(); return; }
+
+            const turnoEsperado = turnos[0];
+            const resultado     = ctrl.seleccionarTurno(turnoEsperado.idTurnoExamen);
+
+            expect(resultado).to.be.instanceOf(Turno);
+            expect(resultado.idTurnoExamen).to.equal(turnoEsperado.idTurnoExamen);
+            expect(store.turnoSeleccionado).to.equal(resultado);
+        });
+    });
 });

@@ -36,4 +36,32 @@ describe('CarrerasController — Integración con backend', () => {
             }
         });
     });
+
+    // ── seleccionarCarrera() ──────────────────────────────────────────────────
+
+    describe('seleccionarCarrera() — búsqueda en store.carreras y actualización del store', () => {
+
+        it('debe retornar null cuando el id no corresponde a ninguna carrera cargada', async function () {
+            this.timeout(8000);
+
+            await ctrl.cargarTodas();
+            const resultado = ctrl.seleccionarCarrera('id-carrera-inexistente');
+
+            expect(resultado).to.be.null;
+        });
+
+        it('debe retornar la instancia de Carrera y actualizar store.carreraSeleccionada cuando el id es válido', async function () {
+            this.timeout(8000);
+
+            const carreras = await ctrl.cargarTodas();
+            if (carreras.length === 0) { this.skip(); return; }
+
+            const carreraEsperada = carreras[0];
+            const resultado       = ctrl.seleccionarCarrera(carreraEsperada.idCarrera);
+
+            expect(resultado).to.be.instanceOf(Carrera);
+            expect(resultado.idCarrera).to.equal(carreraEsperada.idCarrera);
+            expect(store.carreraSeleccionada).to.equal(resultado);
+        });
+    });
 });
