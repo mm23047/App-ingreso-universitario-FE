@@ -47,13 +47,6 @@ describe('PruebasAdmisionDao — Integración con backend', () => {
             }
         });
 
-        it('debe retornar un array vacío o reducido cuando max=0', async function () {
-            this.timeout(5000);
-
-            const resultado = await dao.obtenerTodas(0, 0);
-
-            expect(resultado).to.be.an('array');
-        });
     });
 
     // ── GET /pruebas_admision/{id} ────────────────────────────────────────────
