@@ -33,6 +33,7 @@
     import AreasController from './js/control/areas_controller.js';
     import { store }       from './js/infra/app_state.js';
     import { navigate }    from './js/infra/router.js';
+    import './js/boundary/components/estado-vacio.js';
 
     const ctrl          = new AreasController();
     const listaEl       = document.getElementById('lista-areas');
@@ -41,13 +42,18 @@
     const prueba = store.prueba;
 
     if (!prueba?.idPruebaAdmision) {
-        listaEl.innerHTML = `
-            <p class="text-muted text-center">No hay un proceso seleccionado.</p>
-            <div class="text-center mt-md">
-                <button class="btn btn-primary" id="btn-ir-procesos">Ver procesos →</button>
-            </div>`;
-        document.getElementById('btn-ir-procesos')
-            ?.addEventListener('click', () => navigate('/procesos'));
+        const vacio = document.createElement('app-estado-vacio');
+        vacio.setAttribute('titulo', 'No hay un proceso seleccionado.');
+
+        const btn = document.createElement('button');
+        btn.className   = 'btn btn-primary';
+        btn.textContent = 'Ver procesos →';
+        btn.slot        = 'acciones';
+        btn.addEventListener('click', () => navigate('/procesos'));
+        vacio.appendChild(btn);
+
+        listaEl.innerHTML = '';
+        listaEl.appendChild(vacio);
     } else {
         panelContexto.innerHTML =
             `Áreas y temas del proceso: ` +

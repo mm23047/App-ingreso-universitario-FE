@@ -40,9 +40,12 @@ async function inicializarPruebas() {
         await import('./unit/infra/router.unit.test.js');
 
         // Web Components — participan en los flujos evaluados del parcial
-        await import('./components/arbol.unit.test.js');         // flujo: Áreas
-        await import('./components/proceso-card.unit.test.js'); // flujo: Procesos
-        await import('./components/toast.unit.test.js');        // flujos: Registro, Resultado
+        await import('./components/arbol.unit.test.js');            // flujo: Áreas
+        await import('./components/proceso-card.unit.test.js');    // flujo: Procesos
+        await import('./components/toast.unit.test.js');           // flujos: Registro, Resultado
+        await import('./components/recom-box.unit.test.js');       // flujo: Resultado (recomendaciones)
+        await import('./components/estado-vacio.unit.test.js');    // flujos: Procesos, Áreas
+        await import('./components/carrera-card.unit.test.js');    // flujo: Carreras
 
         mocha.run();
     } catch (error) {

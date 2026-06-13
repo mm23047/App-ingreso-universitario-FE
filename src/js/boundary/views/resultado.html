@@ -51,9 +51,9 @@
 <div id="lista-resultados" class="consulta-wrap"></div>
 
 <script type="module">
-    // Rutas relativas al documento base index.html
     import ExamenController from './js/control/examen_controller.js';
     import { store } from './js/infra/app_state.js';
+    import './js/boundary/components/recom-box.js';
 
     const ctrl        = new ExamenController();
     const inputId     = document.getElementById('input-id');
@@ -67,80 +67,32 @@
         msgEstado.classList.remove('hidden');
     };
 
-    function generarRecomendacionesHtml(examen) {
-        const CONFIG = {
-            ADMITIDO: {
-                cls: 'recom-admitido', icon: '', subtitulo: '¡Felicitaciones! Has sido admitido',
-                pasos: [
-                    'Presenta tus documentos originales en la Oficina Central de Registros.',
-                    'Realiza el pago de matrícula en Colecturía.',
-                    'Consulta el sistema en línea para confirmar tu aula y sección.'
-                ]
-            },
-            PENDIENTE: {
-                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu resultado está siendo procesado',
-                pasos: [
-                    'El sistema está calificando tu examen; los puntajes se actualizan periódicamente.',
-                    'Vuelve a consultar esta página en 24–48 horas hábiles.',
-                    'No necesitas realizar ningún trámite adicional mientras esté pendiente.'
-                ]
-            },
-            NO_ADMITIDO: {
-                cls: 'recom-no-admitido', icon: '', subtitulo: 'Opciones disponibles para ti',
-                pasos: [
-                    'Infórmate sobre la próxima convocatoria de admisión.',
-                    'Explora otras carreras donde tu puntaje podría ser competitivo.',
-                    'Acude al servicio de orientación vocacional de la universidad.'
-                ]
-            },
-            // NUEVO: Escenario UX cuando el examen ya tiene nota calculada pero sigue en proceso de cupo
-            CALIFICADO: {
-                cls: 'recom-pendiente', icon: '', subtitulo: 'Tu examen ya ha sido calificado',
-                pasos: [
-                    'Tu nota ha sido registrada en el sistema de manera exitosa.',
-                    'Espera a que finalice la etapa actual para conocer la distribución competitiva de cupos.',
-                    'Monitorea periódicamente este panel para verificar si tu estado cambia a Admitido.'
-                ]
-            }
-        };
-
+    /* ── Construye el elemento <app-recom-box> con los datos del examen ── */
+    function crearRecomBox(examen) {
         let estadoClave = examen.estadoAdmision;
-        
-        // Si no hay estado de admisión definitivo aún, heredamos el estado de la inscripción del examen
         if (!estadoClave && examen.inscripcionesPrueba?.estado) {
-            estadoClave = examen.inscripcionesPrueba.estado; 
+            estadoClave = examen.inscripcionesPrueba.estado;
         }
+        if (!estadoClave) return null;
 
-        const config = CONFIG[estadoClave];
-        if (!config) return '';
-
-        const itemsLista = config.pasos.map(p => `<li>${p}</li>`).join('');
-        return `
-            <div class="recom-box ${config.cls}">
-                <div class="recom-titulo">
-                    <span>${config.icon}</span>
-                    <span>Recomendaciones y siguientes pasos</span>
-                </div>
-                <p class="recom-subtitulo">${config.subtitulo}</p>
-                <ol class="recom-lista">${itemsLista}</ol>
-            </div>`;
+        const recom = document.createElement('app-recom-box');
+        recom.data = { tipo: estadoClave };
+        return recom;
     }
 
-    const renderExamen = (ex) => {
-        const calificado = ex.puntajeFinal != null;
+    /* ── Tarjeta de examen realizado → retorna elemento DOM ── */
+    function renderExamen(ex) {
+        const calificado        = ex.puntajeFinal != null;
+        const estadoInscripcion = ex.inscripcionesPrueba?.estado ?? '—';
 
         const badgeCalificacion = calificado
             ? '<span class="badge badge-success">Calificado</span>'
             : '<span class="badge badge-warning">Pendiente de calificación</span>';
 
         let badgeAdmision = '';
-        if (ex.estadoAdmision === 'ADMITIDO') {
-            badgeAdmision = '<span class="badge badge-info">Admitido</span>';
-        } else if (ex.estadoAdmision === 'NO_ADMITIDO') {
-            badgeAdmision = '<span class="badge badge-danger">No admitido</span>';
-        } else if (ex.estadoAdmision === 'PENDIENTE') {
-            badgeAdmision = '<span class="badge badge-neutral">Pendiente de admisión</span>';
-        }
+        if      (ex.estadoAdmision === 'ADMITIDO')    badgeAdmision = '<span class="badge badge-info">Admitido</span>';
+        else if (ex.estadoAdmision === 'NO_ADMITIDO') badgeAdmision = '<span class="badge badge-danger">No admitido</span>';
+        else if (ex.estadoAdmision === 'PENDIENTE')   badgeAdmision = '<span class="badge badge-neutral">Pendiente de admisión</span>';
 
         const fecha = ex.fechaRealizacion
             ? new Date(ex.fechaRealizacion).toLocaleString('es-SV', {
@@ -153,123 +105,138 @@
             ?? ex.inscripcionesPrueba?.pruebaAdmision?.nombrePrueba
             ?? 'Prueba de admisión';
 
-        const aspirante = ex.inscripcionesPrueba?.aspiranteDato;
-        const nombreAsp = aspirante
+        const aspirante  = ex.inscripcionesPrueba?.aspiranteDato;
+        const nombreAsp  = aspirante
             ? `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim()
             : '—';
 
-        const estadoInscripcion = ex.inscripcionesPrueba?.estado ?? '—';
+        const card = document.createElement('div');
+        card.className = 'card mb-md';
 
-        const alertaInconsistencia = (calificado && estadoInscripcion === 'INSCRITO')
-            ? `<div class="alerta-datos" role="alert">
-                   El puntaje está registrado pero el estado de tu inscripción no se actualizó correctamente.
-                   Comunícate con la Oficina de Admisiones para verificar tu expediente.
-               </div>`
-            : '';
+        /* Alerta de inconsistencia de datos (condicional) */
+        if (calificado && estadoInscripcion === 'INSCRITO') {
+            const alerta = document.createElement('div');
+            alerta.className = 'alerta-datos';
+            alerta.setAttribute('role', 'alert');
+            alerta.textContent =
+                'El puntaje está registrado pero el estado de tu inscripción no se actualizó correctamente. ' +
+                'Comunícate con la Oficina de Admisiones para verificar tu expediente.';
+            card.appendChild(alerta);
+        }
 
-        return `
-            <div class="card mb-md">
-                ${alertaInconsistencia}
-                <div class="examen-header">
-                    <h3>${pruebaNombre}</h3>
-                    <div class="badges-row">
-                        ${badgeCalificacion}
-                        ${badgeAdmision}
-                    </div>
-                </div>
-                ${calificado ? `
-                    <div class="puntaje-panel">
-                        <p class="puntaje-label">Puntaje obtenido</p>
-                        <span class="puntaje-num">${ex.puntajeFinal}</span>
-                    </div>` : ''}
-                <dl class="examen-grid">
-                    <dt>Aspirante</dt>
-                    <dd>${nombreAsp}</dd>
-                    <dt>Fecha de realización</dt>
-                    <dd>${fecha}</dd>
-                    <dt>Etapa</dt>
-                    <dd>${ex.etapaAdmision?.nombre ?? '—'}</dd>
-                    <dt>Estado</dt>
-                    <dd>${estadoInscripcion}</dd>
-                    ${ex.carreraAsignada ? `<dt>Carrera asignada</dt><dd>${ex.carreraAsignada}</dd>` : ''}
-                    <dt>Clave de examen</dt>
-                    <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>
-                </dl>
+        /* Cabecera de la tarjeta */
+        const header = document.createElement('div');
+        header.className = 'examen-header';
+        header.innerHTML = `
+            <h3>${pruebaNombre}</h3>
+            <div class="badges-row">${badgeCalificacion}${badgeAdmision}</div>`;
+        card.appendChild(header);
 
-                ${generarRecomendacionesHtml(ex)}
+        /* Panel de puntaje (solo si está calificado) */
+        if (calificado) {
+            const puntajeDiv = document.createElement('div');
+            puntajeDiv.className = 'puntaje-panel';
+            puntajeDiv.innerHTML = `
+                <p class="puntaje-label">Puntaje obtenido</p>
+                <span class="puntaje-num">${ex.puntajeFinal}</span>`;
+            card.appendChild(puntajeDiv);
+        }
 
-            </div>
-        `;
-    };
+        /* Grid de datos del examen */
+        const dl = document.createElement('dl');
+        dl.className = 'examen-grid';
+        dl.innerHTML = `
+            <dt>Aspirante</dt>        <dd>${nombreAsp}</dd>
+            <dt>Fecha de realización</dt><dd>${fecha}</dd>
+            <dt>Etapa</dt>            <dd>${ex.etapaAdmision?.nombre ?? '—'}</dd>
+            <dt>Estado</dt>           <dd>${estadoInscripcion}</dd>
+            ${ex.carreraAsignada ? `<dt>Carrera asignada</dt><dd>${ex.carreraAsignada}</dd>` : ''}
+            <dt>Clave de examen</dt>  <dd>${ex.claveExamen?.nombreClave ?? '—'}</dd>`;
+        card.appendChild(dl);
 
-    const renderInscritoSinExamen = (insc) => {
+        /* Recomendaciones — delegadas al componente */
+        const recom = crearRecomBox(ex);
+        if (recom) card.appendChild(recom);
+
+        return card;
+    }
+
+    /* ── Notificación inscrito sin examen → retorna elemento DOM ── */
+    function renderInscritoSinExamen(insc) {
         const pruebaNombre = insc.pruebaAdmision?.nombrePrueba ?? 'Prueba de admisión';
         const aspirante    = insc.aspiranteDato;
         const nombreAsp    = aspirante
             ? `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim()
             : '—';
 
-        return `
-            <div class="inscrito-notif">
-                <div class="examen-header">
-                    <h3>${pruebaNombre}</h3>
-                    <div class="badges-row">
-                        <span class="badge badge-warning">Pendiente de examen</span>
-                    </div>
+        const div = document.createElement('div');
+        div.className = 'inscrito-notif';
+        div.innerHTML = `
+            <div class="examen-header">
+                <h3>${pruebaNombre}</h3>
+                <div class="badges-row">
+                    <span class="badge badge-warning">Pendiente de examen</span>
                 </div>
-                <dl class="examen-grid">
-                    <dt>Aspirante</dt>
-                    <dd>${nombreAsp}</dd>
-                    <dt>Estado</dt>
-                    <dd>${insc.estado ?? 'INSCRITO'}</dd>
-                </dl>
-                <div class="recom-box recom-pendiente">
-                    <div class="recom-titulo">
-                        <span></span>
-                        <span>Próximos pasos</span>
-                    </div>
-                    <p class="recom-subtitulo">Estás inscrito — el examen aún no ha sido realizado</p>
-                    <ol class="recom-lista">
-                        <li>Verifica la fecha y hora de tu examen en la Oficina de Admisiones.</li>
-                        <li>Ten a mano tu DUI y comprobante de inscripción el día de la prueba.</li>
-                        <li>Llega al aula asignada con al menos 30 minutos de anticipación.</li>
-                        <li>Descansa bien la noche anterior y lleva lapicero negro.</li>
-                        <li>Consulta esta página después del examen para ver tu resultado.</li>
-                    </ol>
-                </div>
-            </div>`;
-    };
+            </div>
+            <dl class="examen-grid">
+                <dt>Aspirante</dt><dd>${nombreAsp}</dd>
+                <dt>Estado</dt>   <dd>${insc.estado ?? 'INSCRITO'}</dd>
+            </dl>`;
 
-    const renderSoloRegistrado = (aspirante) => {
+        const recom = document.createElement('app-recom-box');
+        recom.data = {
+            tipo:      'PENDIENTE',
+            titulo:    'Próximos pasos',
+            subtitulo: 'Estás inscrito — el examen aún no ha sido realizado',
+            pasos: [
+                'Verifica la fecha y hora de tu examen en la Oficina de Admisiones.',
+                'Ten a mano tu DUI y comprobante de inscripción el día de la prueba.',
+                'Llega al aula asignada con al menos 30 minutos de anticipación.',
+                'Descansa bien la noche anterior y lleva lapicero negro.',
+                'Consulta esta página después del examen para ver tu resultado.'
+            ]
+        };
+        div.appendChild(recom);
+        return div;
+    }
+
+    /* ── Panel aspirante solo registrado → retorna elemento DOM ── */
+    function renderSoloRegistrado(aspirante) {
         const nombreAsp = `${aspirante.nombres ?? ''} ${aspirante.apellidos ?? ''}`.trim() || 'Aspirante';
-        
-        return `
-            <div class="inscrito-notif" style="border-left: 4px solid var(--clr-warning, #f59e0b);">
-                <div class="examen-header">
-                    <h3>¡Registro Encontrado!</h3>
-                    <div class="badges-row">
-                        <span class="badge badge-warning" style="background-color: #fef3c7; color: #d97706;">Sin convocatorias activas</span>
-                    </div>
-                </div>
-                <p class="mb-md">Hola <strong>${nombreAsp}</strong>, tu cuenta ha sido creada exitosamente en nuestra plataforma, pero detectamos que aún no te has inscrito a ninguna prueba de admisión para el ciclo actual.</p>
-                
-                <div class="recom-box recom-pendiente">
-                    <div class="recom-titulo">
-                        <span></span>
-                        <span>¿Qué debes hacer ahora?</span>
-                    </div>
-                    <p class="recom-subtitulo">Sigue estos pasos para activar tu proceso de selección:</p>
-                    <ol class="recom-lista">
-                        <li>Dirígete al apartado de <strong>Inscripciones</strong> en el menú principal.</li>
-                        <li>Selecciona la carrera a la que deseas aplicar y la convocatoria disponible.</li>
-                        <li>Descarga tu mandamiento de pago (si aplica) y efectúa el pago en las agencias autorizadas.</li>
-                        <li>Una vez procesado tu pago, regresa a esta pestaña para verificar la asignación de tu aula, fecha y clave de examen.</li>
-                    </ol>
-                </div>
-            </div>`;
-    };
 
-    // Cambiado el nombre de la variable a "criterio" para reflejar la flexibilidad
+        const div = document.createElement('div');
+        div.className = 'inscrito-notif';
+        div.style.borderLeft = '4px solid var(--color-warning)';
+        div.innerHTML = `
+            <div class="examen-header">
+                <h3>¡Registro Encontrado!</h3>
+                <div class="badges-row">
+                    <span class="badge badge-warning" style="background-color:#fef3c7;color:#d97706;">Sin convocatorias activas</span>
+                </div>
+            </div>
+            <p class="mb-md">
+                Hola <strong>${nombreAsp}</strong>, tu cuenta ha sido creada exitosamente en nuestra
+                plataforma, pero detectamos que aún no te has inscrito a ninguna prueba de admisión
+                para el ciclo actual.
+            </p>`;
+
+        const recom = document.createElement('app-recom-box');
+        recom.data = {
+            tipo:      'PENDIENTE',
+            titulo:    '¿Qué debes hacer ahora?',
+            subtitulo: 'Sigue estos pasos para activar tu proceso de selección:',
+            pasos: [
+                'Dirígete al apartado de <strong>Inscripciones</strong> en el menú principal.',
+                'Selecciona la carrera a la que deseas aplicar y la convocatoria disponible.',
+                'Descarga tu mandamiento de pago (si aplica) y efectúa el pago en las agencias autorizadas.',
+                'Una vez procesado tu pago, regresa a esta pestaña para verificar la asignación de tu aula, fecha y clave de examen.'
+            ]
+        };
+        div.appendChild(recom);
+        return div;
+    }
+
+    /* ── Búsqueda principal ── */
     const buscarResultados = async (criterio) => {
         if (!criterio) {
             mostrarMensaje('Ingresa tu DUI, Correo o ID de aspirante para consultar.');
@@ -280,11 +247,17 @@
         try {
             const { tipo, datos } = await ctrl.consultarEstadoAspirante(criterio);
             msgEstado.classList.add('hidden');
+            listaEl.innerHTML = '';
 
-            if      (tipo === 'examenes')      listaEl.innerHTML = datos.map(renderExamen).join('');
-            else if (tipo === 'inscripciones') listaEl.innerHTML = datos.map(renderInscritoSinExamen).join('');
-            else if (tipo === 'solo_registrado') listaEl.innerHTML = renderSoloRegistrado(datos); 
-            else    mostrarMensaje('No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
+            if (tipo === 'examenes') {
+                datos.forEach(ex => listaEl.appendChild(renderExamen(ex)));
+            } else if (tipo === 'inscripciones') {
+                datos.forEach(insc => listaEl.appendChild(renderInscritoSinExamen(insc)));
+            } else if (tipo === 'solo_registrado') {
+                listaEl.appendChild(renderSoloRegistrado(datos));
+            } else {
+                mostrarMensaje('No se encontró ningún aspirante registrado con los datos ingresados. Revisa si hay errores de dedo en tu DUI o Correo.');
+            }
         } catch (error) {
             const esCaida = error instanceof TypeError && error.message.includes('fetch');
             mostrarMensaje(esCaida
@@ -294,14 +267,14 @@
         }
     };
 
-    // ── Auto-consulta si hay sesión activa ──
+    /* ── Auto-consulta si hay sesión activa ── */
     const aspId = store.aspirante?.id;
     if (aspId) {
         inputId.value = aspId;
         buscarResultados(aspId);
     }
 
-    // ── Búsqueda manual ──
+    /* ── Búsqueda manual ── */
     btnBuscar.addEventListener('click', () => {
         const criterio = inputId.value.trim();
         if (!criterio) {

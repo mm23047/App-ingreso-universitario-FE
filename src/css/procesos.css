@@ -105,16 +105,6 @@
     margin-top: var(--space-sm);
 }
 
-/* ── Estados vacíos / error ── */
-.ps-empty {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: var(--space-2xl);
-    color: var(--color-text-muted);
-}
-.ps-empty-icon  { font-size: 2.5rem; opacity: .35; margin-bottom: var(--space-md); }
-.ps-empty-title { font-size: 1rem; font-weight: 500; }
-.ps-empty-desc  { font-size: .88rem; margin-top: 4px; }
 
 .ps-banner-parcial {
     background: #FFFBEB;

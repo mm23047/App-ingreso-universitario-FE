@@ -15,8 +15,8 @@
 </div>
 
 <script type="module">
-    // Rutas relativas a index.html (base del documento), no a esta vista
     import CarrerasController from './js/control/carreras_controller.js';
+    import './js/boundary/components/carrera-card.js';
 
     const controller = new CarrerasController();
     const lista      = document.getElementById('lista-carreras');
@@ -26,12 +26,13 @@
             lista.innerHTML = '<p class="text-muted text-center">No hay carreras disponibles en el backend.</p>';
             return;
         }
-        lista.innerHTML = carreras.map(c => `
-            <div class="carrera-card">
-                <p class="carrera-codigo">${c.idCarrera}</p>
-                <h3>${c.nombreCatalogoCarrera}</h3>
-            </div>
-        `).join('');
+        lista.innerHTML = '';
+        carreras.forEach(c => {
+            const card = document.createElement('app-carrera-card');
+            card.setAttribute('id-carrera', c.idCarrera);
+            card.setAttribute('nombre',     c.nombreCatalogoCarrera);
+            lista.appendChild(card);
+        });
     };
 
     const renderError = (err) => {

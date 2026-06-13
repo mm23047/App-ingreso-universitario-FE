@@ -72,6 +72,7 @@
     import { store }          from './js/infra/app_state.js';
     import { navigate }       from './js/infra/router.js';
     import './js/boundary/components/proceso-card.js';
+    import './js/boundary/components/estado-vacio.js';
 
     const ctrl      = new ProcesosController();
     const grid      = document.getElementById('ps-grid');
@@ -119,14 +120,11 @@
         actualizarContador(lista.length);
 
         if (!lista.length) {
-            grid.innerHTML = `
-                <div class="ps-empty">
-                    <div class="ps-empty-icon"></div>
-                    <p class="ps-empty-title">No se encontraron procesos.</p>
-                    <p class="ps-empty-desc">
-                        Intenta con otro término de búsqueda o cambia el filtro de año.
-                    </p>
-                </div>`;
+            const vacio = document.createElement('app-estado-vacio');
+            vacio.setAttribute('titulo',      'No se encontraron procesos.');
+            vacio.setAttribute('descripcion', 'Intenta con otro término de búsqueda o cambia el filtro de año.');
+            grid.innerHTML = '';
+            grid.appendChild(vacio);
             return;
         }
 
@@ -289,11 +287,11 @@
     }
 
     function mostrarError(msg) {
-        grid.innerHTML = `
-            <div class="ps-empty">
-                <div class="ps-empty-icon"></div>
-                <p class="ps-empty-title text-danger">${msg}</p>
-            </div>`;
+        const vacio = document.createElement('app-estado-vacio');
+        vacio.setAttribute('titulo', msg);
+        vacio.setAttribute('tipo',   'error');
+        grid.innerHTML = '';
+        grid.appendChild(vacio);
     }
 
     /* ── Arranque ── */
