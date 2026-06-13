@@ -571,6 +571,94 @@ describe('AspirantesDao - Pruebas Unitarias con Stubs', () => {
         });
     });
 
+    // ── buscarPorCriterio con Stub ───────────────────────────────────────────
+    describe('buscarPorCriterio con Stub', () => {
+        it('debe lanzar error cuando paramName es null', async () => {
+            try {
+                await aspirantesDao.buscarPorCriterio(null, '01234567-8');
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error cuando criterio es null', async () => {
+            try {
+                await aspirantesDao.buscarPorCriterio('dui', null);
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error cuando paramName es cadena vacía', async () => {
+            try {
+                await aspirantesDao.buscarPorCriterio('', '01234567-8');
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('debe lanzar error cuando criterio es cadena vacía', async () => {
+            try {
+                await aspirantesDao.buscarPorCriterio('dui', '');
+                expect.fail();
+            } catch (e) {
+                expect(e.message).to.include('requerido');
+            }
+        });
+
+        it('URL debe contener el paramName y el criterio como query string', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ ok: true, json: () => Promise.resolve([]) }); };
+
+            await aspirantesDao.buscarPorCriterio('dui', '01234567-8');
+
+            expect(capturedUrl).to.include('dui=01234567-8');
+        });
+
+        it('debe aplicar encodeURIComponent al criterio (@ codificado como %40)', async () => {
+            sinon.stub(window, 'fetch');
+            let capturedUrl;
+            window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ ok: true, json: () => Promise.resolve([]) }); };
+
+            await aspirantesDao.buscarPorCriterio('correo', 'juan@mail.com');
+
+            expect(capturedUrl).to.include('correo=juan%40mail.com');
+        });
+
+        it('debe retornar los datos del servidor cuando r.ok es true', async () => {
+            const mockResultado = [{ id: 'uuid-asp-1', nombres: 'Juan', dui: '01234567-8' }];
+            sinon.stub(window, 'fetch').resolves({ ok: true, json: () => Promise.resolve(mockResultado) });
+
+            const resultado = await aspirantesDao.buscarPorCriterio('dui', '01234567-8');
+
+            expect(resultado).to.be.an('array');
+            expect(resultado[0].id).to.equal('uuid-asp-1');
+        });
+
+        it('debe retornar array vacío cuando r.ok es false — non-ok no lanza en buscarPorCriterio', async () => {
+            sinon.stub(window, 'fetch').resolves({ ok: false });
+
+            const resultado = await aspirantesDao.buscarPorCriterio('dui', '01234567-8');
+
+            expect(resultado).to.deep.equal([]);
+        });
+
+        it('debe propagar TypeError cuando la red no responde', async () => {
+            sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+            try {
+                await aspirantesDao.buscarPorCriterio('dui', '01234567-8');
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(TypeError);
+            }
+        });
+    });
+
     // ── eliminar con Stub ────────────────────────────────────────────────────
     describe('eliminar con Stub', () => {
         const ID = 'uuid-aspirante-borrar';

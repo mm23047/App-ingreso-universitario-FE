@@ -228,7 +228,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
     describe('cargar() — carga paralela con degradación controlada (Promise.allSettled)', () => {
         it('debe retornar { procesos: [], avisos: [] } cuando los 3 endpoints responden OK y no hay datos', async () => {
             sinon.stub(window, 'fetch');
-            window.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+            window.fetch = () => Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
 
             const resultado = await ctrl.cargar();
 
@@ -256,9 +256,9 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             let callCount = 0;
             window.fetch = () => {
                 callCount++;
-                if (callCount === 1) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                if (callCount === 1) return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
                 if (callCount === 2) return Promise.reject(new TypeError('Failed to fetch'));
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             const resultado = await ctrl.cargar();
@@ -273,9 +273,9 @@ describe('ProcesosController - Pruebas Unitarias', () => {
 
             window.fetch = (url) => {
                 if (url.includes('turnos') && !url.includes('aulas_turnos')) {
-                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTurnos) });
+                    return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve(mockTurnos) });
                 }
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             await ctrl.cargar();
@@ -290,9 +290,9 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             let callCount = 0;
             window.fetch = () => {
                 callCount++;
-                if (callCount === 1) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                if (callCount === 1) return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
                 if (callCount === 2) return Promise.reject(new TypeError('Failed to fetch'));
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             await ctrl.cargar();
@@ -307,9 +307,9 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             // Evaluamos la URL directamente
             window.fetch = (url) => {
                 if (url.includes('pruebas_admision')) {
-                    return Promise.resolve({ ok: true, json: () => Promise.resolve(mockPruebas) });
+                    return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve(mockPruebas) });
                 }
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             const resultado = await ctrl.cargar();
@@ -325,7 +325,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
         it('debe retornar array de procesos ensamblados cuando el servidor responde con resultados', async () => {
             const mockPruebas = [{ idPruebaAdmision: 'p1', nombrePrueba: 'Proceso 2026', anio: 2026, activa: true }];
             sinon.stub(window, 'fetch');
-            window.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(mockPruebas) });
+            window.fetch = () => Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve(mockPruebas) });
 
             const resultado = await ctrl.buscar('2026');
 
@@ -333,22 +333,23 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             expect(resultado[0].idPruebaAdmision).to.equal('p1');
         });
 
-        it('debe incluir el query codificado (encodeURIComponent) en la URL de la petición', async () => {
+        it('debe incluir el query codificado en la URL de la petición', async () => {
             sinon.stub(window, 'fetch');
             let capturedUrl;
             window.fetch = (url) => {
                 capturedUrl = url;
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             await ctrl.buscar('proceso 2026');
 
-            expect(capturedUrl).to.include(encodeURIComponent('proceso 2026'));
+            // URLSearchParams codifica espacios como '+' (application/x-www-form-urlencoded)
+            expect(capturedUrl).to.include('proceso+2026');
         });
 
         it('debe retornar array vacío cuando el servidor responde con lista vacía', async () => {
             sinon.stub(window, 'fetch');
-            window.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+            window.fetch = () => Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
 
             const resultado = await ctrl.buscar('');
 
@@ -357,7 +358,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
 
         it('debe crear un nuevo AbortController en cada llamada a buscar()', async () => {
             sinon.stub(window, 'fetch');
-            window.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+            window.fetch = () => Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
 
             await ctrl.buscar('q1');
             const primerCtrl = ctrl._abortController;
@@ -373,7 +374,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
             let capturedOpts;
             window.fetch = (url, opts) => {
                 capturedOpts = opts;
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             await ctrl.buscar('test');
@@ -398,7 +399,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
                         );
                     });
                 }
-                return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+                return Promise.resolve({ status: 200, ok: true, json:() => Promise.resolve([]) });
             };
 
             const p1 = ctrl.buscar('primero');
@@ -425,7 +426,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
 
             sinon.stub(window, 'fetch');
             window.fetch = () => Promise.resolve({
-                ok: true,
+                status: 200, ok: true,
                 json: () => Promise.resolve([{ idPruebaAdmision: 'p1', activa: true }])
             });
 

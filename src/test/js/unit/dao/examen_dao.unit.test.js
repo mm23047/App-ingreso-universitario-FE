@@ -192,3 +192,109 @@ describe('ExamenRealizadoDao — obtenerPorAspirante con Stub', () => {
         }
     });
 });
+
+// ── buscarPorCriterio ─────────────────────────────────────────────────────────
+// Comportamiento clave: r.ok=false → lanza Error (diferencia con AspirantesDao que devuelve [])
+
+describe('ExamenRealizadoDao — buscarPorCriterio con Stub', () => {
+    let dao;
+
+    beforeEach(() => {
+        dao = new ExamenRealizadoDao();
+        sinon.restoreAll();
+    });
+
+    afterEach(() => {
+        sinon.restoreAll();
+    });
+
+    it('debe lanzar error cuando paramName es null', async () => {
+        try {
+            await dao.buscarPorCriterio(null, '01234567-8');
+            expect.fail();
+        } catch (e) {
+            expect(e.message).to.include('requerido');
+        }
+    });
+
+    it('debe lanzar error cuando criterio es null', async () => {
+        try {
+            await dao.buscarPorCriterio('dui', null);
+            expect.fail();
+        } catch (e) {
+            expect(e.message).to.include('requerido');
+        }
+    });
+
+    it('debe lanzar error cuando paramName es cadena vacía', async () => {
+        try {
+            await dao.buscarPorCriterio('', '01234567-8');
+            expect.fail();
+        } catch (e) {
+            expect(e.message).to.include('requerido');
+        }
+    });
+
+    it('URL debe contener el segmento /buscar', async () => {
+        sinon.stub(window, 'fetch');
+        let capturedUrl;
+        window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ ok: true, json: () => Promise.resolve([]) }); };
+
+        await dao.buscarPorCriterio('dui', '01234567-8');
+
+        expect(capturedUrl).to.include('buscar');
+    });
+
+    it('URL debe contener el paramName y el criterio como query string', async () => {
+        sinon.stub(window, 'fetch');
+        let capturedUrl;
+        window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ ok: true, json: () => Promise.resolve([]) }); };
+
+        await dao.buscarPorCriterio('dui', '01234567-8');
+
+        expect(capturedUrl).to.include('dui=01234567-8');
+    });
+
+    it('debe aplicar encodeURIComponent al criterio (@ codificado como %40)', async () => {
+        sinon.stub(window, 'fetch');
+        let capturedUrl;
+        window.fetch = (url) => { capturedUrl = url; return Promise.resolve({ ok: true, json: () => Promise.resolve([]) }); };
+
+        await dao.buscarPorCriterio('correo', 'juan@mail.com');
+
+        expect(capturedUrl).to.include('correo=juan%40mail.com');
+    });
+
+    it('debe retornar los datos del servidor cuando r.ok es true', async () => {
+        const mockResultado = [{ idExamenRealizado: 'uuid-e1' }];
+        sinon.stub(window, 'fetch').resolves({ ok: true, json: () => Promise.resolve(mockResultado) });
+
+        const resultado = await dao.buscarPorCriterio('dui', '01234567-8');
+
+        expect(resultado).to.be.an('array');
+        expect(resultado[0].idExamenRealizado).to.equal('uuid-e1');
+    });
+
+    it('debe lanzar Error cuando r.ok es false — a diferencia de AspirantesDao no retorna []', async () => {
+        sinon.stub(window, 'fetch').resolves({ ok: false });
+
+        try {
+            await dao.buscarPorCriterio('dui', '01234567-8');
+            expect.fail();
+        } catch (e) {
+            expect(e).to.be.instanceOf(Error);
+            expect(e.message).to.include('servidor');
+        }
+    });
+
+    it('debe propagar TypeError cuando la red no responde', async () => {
+        sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+        try {
+            await dao.buscarPorCriterio('dui', '01234567-8');
+            expect.fail();
+        } catch (e) {
+            expect(e).to.be.instanceOf(TypeError);
+        }
+    });
+});
