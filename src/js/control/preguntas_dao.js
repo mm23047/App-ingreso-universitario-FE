@@ -36,30 +36,12 @@ class PreguntasDao extends DefaultDao {
     }
 
     async obtenerTodas(first = 0, max = 50) {
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}?first=${first}&max=${max}`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapear(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener preguntas:', error);
-            throw error;
-        }
+        return (await this._get(`${this.BASE_URL}?first=${first}&max=${max}`)).map(d => this._mapear(d));
     }
 
     async obtenerOpcionesDePregunta(idPregunta) {
         if (!idPregunta) throw new Error('El ID de la pregunta es requerido');
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/${idPregunta}/opciones`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapearOpcion(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener opciones de la pregunta:', error);
-            throw error;
-        }
+        return (await this._get(`${this.BASE_URL}/${idPregunta}/opciones`)).map(d => this._mapearOpcion(d));
     }
 }
 

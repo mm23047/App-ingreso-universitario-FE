@@ -36,30 +36,12 @@ class AreasConocimientoDao extends DefaultDao {
     }
 
     async obtenerTodas(first = 0, max = 100) {
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}?first=${first}&max=${max}`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapear(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener áreas de conocimiento:', error);
-            throw error;
-        }
+        return (await this._get(`${this.BASE_URL}?first=${first}&max=${max}`)).map(d => this._mapear(d));
     }
 
     async obtenerTemasPorArea(idArea) {
         if (!idArea) throw new Error('El ID del área es requerido');
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/${idArea}/temas`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapearTema(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener temas del área:', error);
-            throw error;
-        }
+        return (await this._get(`${this.BASE_URL}/${idArea}/temas`)).map(d => this._mapearTema(d));
     }
 
     // GET /pruebas_admision/{idPrueba}/areas
@@ -67,17 +49,7 @@ class AreasConocimientoDao extends DefaultDao {
     // filtrado y ordenado por el backend — no requiere llamadas adicionales.
     async obtenerAreasPorPrueba(idPrueba) {
         if (!idPrueba) throw new Error('El ID de la prueba es requerido');
-        try {
-            const url = `${this._raiz}pruebas_admision/${idPrueba}/areas`;
-            const respuesta = await fetch(url, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return await respuesta.json();
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener áreas por prueba:', error);
-            throw error;
-        }
+        return this._get(`${this._raiz}pruebas_admision/${idPrueba}/areas`);
     }
 }
 

@@ -31,14 +31,14 @@ class AspirantesDao extends DefaultDao {
     async crear(aspiranteData) {
         if (!aspiranteData) throw new Error('Los datos del aspirante son requeridos');
         try {
-            const respuesta = await fetch(this.BASE_URL, {
+            const respuesta = await this._fetch(this.BASE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(aspiranteData)
             });
             if (respuesta.status === 201) return this._mapear(await respuesta.json());
 
-            // Intentar parsear ErrorNegocioDTO estructurado del backend
+            // Parsear ErrorNegocioDTO estructurado del backend para extraer tipo y mensaje de negocio.
             let errorData = null;
             try {
                 const cuerpo = await respuesta.text();
@@ -48,9 +48,9 @@ class AspirantesDao extends DefaultDao {
             } catch { /* ignorar fallos en lectura del body */ }
 
             const err = new Error(`Error HTTP: ${respuesta.status}`);
-            err.httpStatus  = respuesta.status;
-            err.tipo        = errorData?.tipo    ?? null;   // 'EDAD_MINIMA' | 'DUI_DUPLICADO' | 'CORREO_DUPLICADO' | null
-            err.mensajeNegocio = errorData?.mensaje ?? null;
+            err.httpStatus       = respuesta.status;
+            err.tipo             = errorData?.tipo    ?? null;   // 'EDAD_MINIMA' | 'DUI_DUPLICADO' | 'CORREO_DUPLICADO'
+            err.mensajeNegocio   = errorData?.mensaje ?? null;
             throw err;
         } catch (error) {
             console.error('Error al crear aspirante:', error);
@@ -60,20 +60,14 @@ class AspirantesDao extends DefaultDao {
 
     async obtenerPorId(id) {
         if (!id) throw new Error('El ID del aspirante es requerido');
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'GET' });
-            if (respuesta.status === 200) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener aspirante:', error);
-            throw error;
-        }
+        return this._mapear(await this._get(`${this.BASE_URL}/${id}`));
     }
 
     async obtenerInscripciones(aspiranteId) {
         if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
         try {
-            const respuesta = await fetch(`${this.BASE_URL}/${aspiranteId}/inscripciones`, { method: 'GET' });
+            // Caso especial: 404 significa sin inscripciones, no es un error de uso.
+            const respuesta = await this._fetch(`${this.BASE_URL}/${aspiranteId}/inscripciones`, { method: 'GET' });
             if (respuesta.status === 200) {
                 return (await respuesta.json()).map(data => new InscripcionPrueba(
                     data.idInscripcionPrueba ?? null,
@@ -83,7 +77,9 @@ class AspirantesDao extends DefaultDao {
                 ));
             }
             if (respuesta.status === 404) return [];
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
         } catch (error) {
             console.error('Error al obtener inscripciones del aspirante:', error);
             throw error;
@@ -92,14 +88,18 @@ class AspirantesDao extends DefaultDao {
 
     async eliminar(id) {
         if (!id) throw new Error('El ID del aspirante es requerido');
+        return this._delete(`${this.BASE_URL}/${id}`);
+    }
+
+    async buscarPorCriterio(paramName, criterio) {
+        if (!paramName || !criterio) throw new Error('El criterio de búsqueda es requerido');
         try {
-            const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'DELETE' });
-            if (respuesta.status === 204) return;
-            const err = new Error(`Error HTTP: ${respuesta.status}`);
-            err.httpStatus = respuesta.status;
-            throw err;
+            // Caso especial: non-ok se trata como sin resultados (comportamiento original).
+            const r = await this._fetch(`${this.BASE_URL}?${paramName}=${encodeURIComponent(criterio)}`);
+            if (r.ok) return r.json();
+            return [];
         } catch (error) {
-            console.error('Error al eliminar aspirante:', error);
+            console.error('Error al buscar aspirante por criterio:', error);
             throw error;
         }
     }
@@ -108,26 +108,15 @@ class AspirantesDao extends DefaultDao {
         if (!aspiranteId || !pruebaAdmisionId) {
             throw new Error('El ID del aspirante y el ID de la prueba son requeridos');
         }
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/${aspiranteId}/inscripciones`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pruebaAdmision: { idPruebaAdmision: pruebaAdmisionId } })
-            });
-            if (respuesta.status === 201) {
-                const data = await respuesta.json();
-                return new InscripcionPrueba(
-                    data.idInscripcionPrueba ?? null,
-                    data.aspiranteDato       ?? null,
-                    data.pruebaAdmision      ?? null,
-                    data.estado              ?? 'INSCRITO'
-                );
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al inscribir aspirante:', error);
-            throw error;
-        }
+        const data = await this._post(`${this.BASE_URL}/${aspiranteId}/inscripciones`, {
+            pruebaAdmision: { idPruebaAdmision: pruebaAdmisionId }
+        });
+        return new InscripcionPrueba(
+            data.idInscripcionPrueba ?? null,
+            data.aspiranteDato       ?? null,
+            data.pruebaAdmision      ?? null,
+            data.estado              ?? 'INSCRITO'
+        );
     }
 }
 

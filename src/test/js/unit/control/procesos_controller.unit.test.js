@@ -270,7 +270,7 @@ describe('ProcesosController - Pruebas Unitarias', () => {
     it('debe poblar _turnosBrutos con los datos del endpoint de turnos al cargar exitosamente', async () => {
             const mockTurnos = [{ idTurnoExamen: 't1' }, { idTurnoExamen: 't2' }];
             sinon.stub(window, 'fetch');
-            
+
             window.fetch = (url) => {
                 if (url.includes('turnos') && !url.includes('aulas_turnos')) {
                     return Promise.resolve({ ok: true, json: () => Promise.resolve(mockTurnos) });
@@ -280,7 +280,10 @@ describe('ProcesosController - Pruebas Unitarias', () => {
 
             await ctrl.cargar();
 
-            expect(ctrl._turnosBrutos).to.deep.equal(mockTurnos);
+            // _turnosBrutos contiene instancias Turno mapeadas desde la respuesta del servidor
+            expect(ctrl._turnosBrutos).to.have.lengthOf(2);
+            expect(ctrl._turnosBrutos[0]).to.have.property('idTurnoExamen', 't1');
+            expect(ctrl._turnosBrutos[1]).to.have.property('idTurnoExamen', 't2');
         });
         it('debe dejar _turnosBrutos vacío cuando el endpoint de turnos falla', async () => {
             sinon.stub(window, 'fetch');

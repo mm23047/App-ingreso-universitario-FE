@@ -27,7 +27,8 @@ class RespuestaExamenDao extends DefaultDao {
             throw new Error('El ID del examen y el ID de la opción son requeridos');
         }
         try {
-            const respuesta = await fetch(this.BASE_URL, {
+            // El backend acepta 200 y 201 indistintamente en este endpoint.
+            const respuesta = await this._fetch(this.BASE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -38,7 +39,9 @@ class RespuestaExamenDao extends DefaultDao {
             if (respuesta.status === 201 || respuesta.status === 200) {
                 return this._mapear(await respuesta.json());
             }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
         } catch (error) {
             console.error('Error al enviar respuesta:', error);
             throw error;
@@ -50,13 +53,16 @@ class RespuestaExamenDao extends DefaultDao {
             throw new Error('El ID del examen y al menos una opción son requeridos');
         }
         try {
-            const respuesta = await fetch(`${this.BASE_URL}/lote`, {
+            // El backend retorna 201 con cuerpo vacío — usamos _fetch directamente.
+            const respuesta = await this._fetch(`${this.BASE_URL}/lote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idExamen: examenId, opcionesSeleccionadas: opcionesIds })
             });
             if (respuesta.status === 201) return true;
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
         } catch (error) {
             console.error('Error al enviar lote de respuestas:', error);
             throw error;
@@ -65,16 +71,7 @@ class RespuestaExamenDao extends DefaultDao {
 
     async obtenerPorExamen(examenId) {
         if (!examenId) throw new Error('El ID del examen es requerido');
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/examen/${examenId}`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapear(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener respuestas del examen:', error);
-            throw error;
-        }
+        return (await this._get(`${this.BASE_URL}/examen/${examenId}`)).map(d => this._mapear(d));
     }
 }
 

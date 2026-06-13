@@ -191,46 +191,37 @@ class ExamenController {
                     const aspirante = await this.aspirantesDao.obtenerPorId(criterio);
                     return { tipo: 'solo_registrado', datos: aspirante };
                 } catch (e) {
-                    const es404 = e.message?.includes('404');
-                    if (!es404) console.warn('Error inesperado al verificar aspirante por ID:', e);
+                    if (e.httpStatus !== 404) console.warn('Error inesperado al verificar aspirante por ID:', e);
                     return { tipo: 'nada', datos: [] };
                 }
             }
 
             // ==========================================
-            // CASO B: BÚSQUEDA POR DUI O CORREO (NUEVO ENDPOINT O2)
+            // CASO B: BÚSQUEDA POR DUI O CORREO
             // ==========================================
             const paramName = criterio.includes('@') ? 'correo' : 'dui';
-            const urlDao = this.examenRealizadoDao.BASE_URL;
-            const urlBase = urlDao.endsWith('/') ? urlDao : urlDao + '/';
-            
-            const response = await fetch(`${urlBase}buscar?${paramName}=${encodeURIComponent(criterio)}`);
-            if (!response.ok) throw new Error('Error en el servidor al procesar la búsqueda.');
-            
-            const examenes = await response.json();
+
+            const examenes = await this.examenRealizadoDao.buscarPorCriterio(paramName, criterio);
             if (examenes && examenes.length > 0) {
                 return { tipo: 'examenes', datos: examenes };
             }
 
             // Si no hay exámenes, verificamos si el aspirante existe en el sistema
-            const queryParamAspirante = paramName === 'correo' ? `correo=${encodeURIComponent(criterio)}` : `dui=${encodeURIComponent(criterio)}`;
-            
-            const resAspirante = await fetch(`${this.aspirantesDao.BASE_URL}?${queryParamAspirante}`);
-            
-            if (resAspirante.ok) {
-                const aspirantes = await resAspirante.json();
-                
-                if (aspirantes && aspirantes.length > 0) {
-                    const aspiranteActivo = aspirantes[0];
-                    const inscripciones = await this.aspirantesDao.obtenerInscripciones(aspiranteActivo.id);
-                    
-                    if (inscripciones.length) {
-                        return { tipo: 'inscripciones', datos: inscripciones };
-                    }
-                    
-                    // Registro limpio encontrado pero sin transacciones (Solo Registrado)
-                    return { tipo: 'solo_registrado', datos: aspiranteActivo };
+            let aspirantes = [];
+            try {
+                aspirantes = await this.aspirantesDao.buscarPorCriterio(paramName, criterio);
+            } catch { /* si falla la búsqueda de aspirantes, caemos a 'nada' */ }
+
+            if (aspirantes && aspirantes.length > 0) {
+                const aspiranteActivo = aspirantes[0];
+                const inscripciones = await this.aspirantesDao.obtenerInscripciones(aspiranteActivo.id);
+
+                if (inscripciones.length) {
+                    return { tipo: 'inscripciones', datos: inscripciones };
                 }
+
+                // Registro limpio encontrado pero sin transacciones (Solo Registrado)
+                return { tipo: 'solo_registrado', datos: aspiranteActivo };
             }
 
             // Si el criterio (DUI/Correo) no pertenece a nadie en la BD

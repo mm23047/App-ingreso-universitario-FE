@@ -53,7 +53,7 @@ class InscripcionesController {
 
         } catch (error) {
             console.error('Error al inscribir:', error);
-            const msg = error.message.includes('409')
+            const msg = error.httpStatus === 409
                 ? 'Ya se encuentra inscrito en esta prueba'
                 : `Error al inscribir: ${error.message}`;
             notificar(msg, 5000, 'error');
@@ -118,7 +118,7 @@ class InscripcionesController {
 
         } catch (error) {
             console.error('Error en inscribirConCarreras:', error);
-            const msg = error.message.includes('409')
+            const msg = error.httpStatus === 409
                 ? 'Ya tienes una inscripción activa para este proceso'
                 : `Error al completar el registro: ${error.message}`;
             notificar(msg, 5000, 'error');

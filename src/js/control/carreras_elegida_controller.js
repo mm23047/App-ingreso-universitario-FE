@@ -26,7 +26,7 @@ class CarrerasElegidaController {
             return elegida;
         } catch (error) {
             console.error('Error al agregar carrera elegida:', error);
-            const msg = error.message.includes('409')
+            const msg = error.httpStatus === 409
                 ? 'Ya registraste esta carrera o esa prioridad está ocupada'
                 : `Error al registrar carrera: ${error.message}`;
             notificar(msg, 5000, 'error');

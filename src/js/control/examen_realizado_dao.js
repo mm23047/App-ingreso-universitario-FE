@@ -47,36 +47,18 @@ class ExamenRealizadoDao extends DefaultDao {
         if (!inscripcionId || !etapaId) {
             throw new Error('El ID de la inscripción y el ID de la etapa son requeridos');
         }
-        try {
-            const respuesta = await fetch(this.BASE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idInscripcion: inscripcionId, idEtapa: etapaId })
-            });
-            if (respuesta.status === 201) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al iniciar examen:', error);
-            throw error;
-        }
+        return this._mapear(await this._post(this.BASE_URL, { idInscripcion: inscripcionId, idEtapa: etapaId }));
     }
 
     async obtenerPorId(id) {
         if (!id) throw new Error('El ID del examen es requerido');
-        try {
-            const respuesta = await fetch(`${this.BASE_URL}/${id}`, { method: 'GET' });
-            if (respuesta.status === 200) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener examen:', error);
-            throw error;
-        }
+        return this._mapear(await this._get(`${this.BASE_URL}/${id}`));
     }
 
     async obtenerPorAspirante(aspiranteId) {
         if (!aspiranteId) throw new Error('El ID del aspirante es requerido');
         try {
-            const respuesta = await fetch(`${this.BASE_URL}/aspirante/${aspiranteId}`, { method: 'GET' });
+            const respuesta = await this._fetch(`${this.BASE_URL}/aspirante/${aspiranteId}`, { method: 'GET' });
             if (respuesta.status === 200) {
                 return (await respuesta.json()).map(d => this._mapear(d));
             }
@@ -89,18 +71,22 @@ class ExamenRealizadoDao extends DefaultDao {
         }
     }
 
-    async obtenerPreguntas(examenId) {
-        if (!examenId) throw new Error('El ID del examen es requerido');
+    async buscarPorCriterio(paramName, criterio) {
+        if (!paramName || !criterio) throw new Error('El criterio de búsqueda es requerido');
         try {
-            const respuesta = await fetch(`${this.BASE_URL}/${examenId}/preguntas`, { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapearPreguntaPorClave(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const urlBase = this.BASE_URL.endsWith('/') ? this.BASE_URL : this.BASE_URL + '/';
+            const r = await this._fetch(`${urlBase}buscar?${paramName}=${encodeURIComponent(criterio)}`);
+            if (!r.ok) throw new Error('Error en el servidor al procesar la búsqueda.');
+            return r.json();
         } catch (error) {
-            console.error('Error al obtener preguntas del examen:', error);
+            console.error('Error al buscar exámenes por criterio:', error);
             throw error;
         }
+    }
+
+    async obtenerPreguntas(examenId) {
+        if (!examenId) throw new Error('El ID del examen es requerido');
+        return (await this._get(`${this.BASE_URL}/${examenId}/preguntas`)).map(d => this._mapearPreguntaPorClave(d));
     }
 }
 

@@ -1,8 +1,12 @@
-import DefaultDao from './default_dao.js';
+import PruebasAdmisionDao from './pruebas_admision_dao.js';
+import TurnosDao          from './turnos_dao.js';
+import AulasTurnosDao     from './aulas_turnos_dao.js';
 
 class ProcesosController {
     constructor() {
-        this._base           = new DefaultDao().getBaseUrl();
+        this.pruebasDao      = new PruebasAdmisionDao();
+        this.turnosDao       = new TurnosDao();
+        this.aulasDao        = new AulasTurnosDao();
         this._turnosBrutos   = [];
         this._dispsBrutos    = [];
         this._abortController = null;
@@ -14,12 +18,9 @@ class ProcesosController {
      */
     async cargar() {
         const [resPruebas, resTurnos, resDisp] = await Promise.allSettled([
-            fetch(`${this._base}pruebas_admision?first=0&max=200`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
-            fetch(`${this._base}turnos`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
-            fetch(`${this._base}aulas_turnos/disponibilidad`)
-                .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`)),
+            this.pruebasDao.obtenerTodas(0, 200),
+            this.turnosDao.obtenerTurnos(),
+            this.aulasDao.obtenerDisponibilidad(),
         ]);
 
         if (resPruebas.status === 'rejected') {
@@ -49,9 +50,7 @@ class ProcesosController {
         if (this._abortController) this._abortController.abort();
         this._abortController = new AbortController();
 
-        const url     = `${this._base}pruebas_admision?first=0&max=200&buscar=${encodeURIComponent(query)}`;
-        const pruebas = await fetch(url, { signal: this._abortController.signal })
-            .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`));
+        const pruebas = await this.pruebasDao.obtenerTodas(0, 200, query, this._abortController.signal);
 
         return this._ensamblar(pruebas, this._turnosBrutos, this._dispsBrutos);
     }

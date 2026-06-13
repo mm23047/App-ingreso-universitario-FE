@@ -29,77 +29,41 @@ class CarrerasElegidaDao extends DefaultDao {
 
     async obtenerPorInscripcion(inscripcionId) {
         if (!inscripcionId) throw new Error('El ID de la inscripción es requerido');
-        try {
-            const respuesta = await fetch(this._urlBase(inscripcionId), { method: 'GET' });
-            if (respuesta.status === 200) {
-                return (await respuesta.json()).map(d => this._mapear(d));
-            }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al obtener carreras elegidas:', error);
-            throw error;
-        }
+        return (await this._get(this._urlBase(inscripcionId))).map(d => this._mapear(d));
     }
 
     async agregarCarrera(inscripcionId, idCarrera, prioridad = 1) {
         if (!inscripcionId || !idCarrera) {
             throw new Error('El ID de la inscripción y el ID de la carrera son requeridos');
         }
-        try {
-            const respuesta = await fetch(this._urlBase(inscripcionId), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ catalogoCarrera: { idCarrera }, prioridad })
-            });
-            if (respuesta.status === 201) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al agregar carrera elegida:', error);
-            throw error;
-        }
+        return this._mapear(await this._post(this._urlBase(inscripcionId), { catalogoCarrera: { idCarrera }, prioridad }));
     }
 
     async actualizarPrioridad(inscripcionId, idCarrera, nuevaPrioridad) {
         if (!inscripcionId || !idCarrera || nuevaPrioridad == null) {
             throw new Error('ID de inscripción, carrera y nueva prioridad son requeridos');
         }
-        try {
-            const respuesta = await fetch(`${this._urlBase(inscripcionId)}/${idCarrera}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prioridad: nuevaPrioridad })
-            });
-            if (respuesta.status === 200) return this._mapear(await respuesta.json());
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al actualizar prioridad de carrera:', error);
-            throw error;
-        }
+        return this._mapear(await this._put(`${this._urlBase(inscripcionId)}/${idCarrera}`, { prioridad: nuevaPrioridad }));
     }
 
     async eliminarCarrera(inscripcionId, idCarrera) {
         if (!inscripcionId || !idCarrera) {
             throw new Error('El ID de la inscripción y el ID de la carrera son requeridos');
         }
-        try {
-            const respuesta = await fetch(`${this._urlBase(inscripcionId)}/${idCarrera}`, {
-                method: 'DELETE'
-            });
-            if (respuesta.status === 204) return true;
-            throw new Error(`Error HTTP: ${respuesta.status}`);
-        } catch (error) {
-            console.error('Error al eliminar carrera elegida:', error);
-            throw error;
-        }
+        await this._delete(`${this._urlBase(inscripcionId)}/${idCarrera}`);
+        return true;
     }
 
     async obtenerPrimeraOpcion(inscripcionId) {
         if (!inscripcionId) throw new Error('El ID de la inscripción es requerido');
         try {
-            const respuesta = await fetch(`${this._urlBase(inscripcionId)}/primera-opcion`, { method: 'GET' });
+            // Caso especial: 404 significa "sin primera opción", no es un error de uso.
+            const respuesta = await this._fetch(`${this._urlBase(inscripcionId)}/primera-opcion`, { method: 'GET' });
             if (respuesta.status === 200) return this._mapear(await respuesta.json());
             if (respuesta.status === 404) return null;
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
         } catch (error) {
             console.error('Error al obtener primera opción de carrera:', error);
             throw error;
@@ -111,7 +75,8 @@ class CarrerasElegidaDao extends DefaultDao {
             throw new Error('El ID de la inscripción y el nuevo orden son requeridos');
         }
         try {
-            const respuesta = await fetch(`${this._urlBase(inscripcionId)}/reordenar`, {
+            // PATCH — no tiene helper genérico; el body es un array, no un objeto.
+            const respuesta = await this._fetch(`${this._urlBase(inscripcionId)}/reordenar`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(nuevoOrdenIds)
@@ -119,7 +84,9 @@ class CarrerasElegidaDao extends DefaultDao {
             if (respuesta.status === 200) {
                 return (await respuesta.json()).map(d => this._mapear(d));
             }
-            throw new Error(`Error HTTP: ${respuesta.status}`);
+            const err = new Error(`Error HTTP: ${respuesta.status}`);
+            err.httpStatus = respuesta.status;
+            throw err;
         } catch (error) {
             console.error('Error al reordenar carreras elegidas:', error);
             throw error;
