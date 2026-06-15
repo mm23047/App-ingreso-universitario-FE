@@ -3,18 +3,24 @@
 const estilos = new CSSStyleSheet();
 estilos.replaceSync(`
     :host {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         border: 2px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: var(--space-xl);
         background: var(--color-surface);
+        min-height: 9rem;
     }
 
     .codigo {
         display: block;
-        font-size: .8rem;
+        font-size: .75rem;
+        font-weight: 600;
         color: var(--color-text-muted);
-        margin-bottom: var(--space-xs);
+        letter-spacing: .04em;
+        margin-top: 0;
+        margin-bottom: var(--space-sm);
     }
 
     .nombre {
