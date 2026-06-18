@@ -25,26 +25,22 @@
     <h2 class="text-center mb-md">¿Cómo funciona el proceso?</h2>
 
     <div class="grid grid-auto-md">
+        <app-paso-card numero="1" titulo="Regístrate">
+            Completa tu perfil: nombre, DUI, fecha de nacimiento y correo electrónico.
+        </app-paso-card>
 
-        <div class="paso-card">
-            <div class="paso-numero">1</div>
-            <h3>Regístrate</h3>
-            <p>Completa tu perfil: nombre, DUI, fecha de nacimiento y correo electrónico.</p>
-        </div>
+        <app-paso-card numero="2" titulo="Elige tu carrera">
+            Selecciona la carrera a la que deseas postularte de la oferta académica disponible.
+        </app-paso-card>
 
-        <div class="paso-card">
-            <div class="paso-numero">2</div>
-            <h3>Elige tu carrera</h3>
-            <p>Selecciona la carrera a la que deseas postularte de la oferta académica disponible.</p>
-        </div>
-
-        <div class="paso-card">
-            <div class="paso-numero">3</div>
-            <h3>Inscríbete</h3>
-            <p>Confirma tu inscripción en la prueba de admisión activa del sistema.</p>
-        </div>
-
+        <app-paso-card numero="3" titulo="Inscríbete">
+            Confirma tu inscripción en la prueba de admisión activa del sistema.
+        </app-paso-card>
     </div>
+
+    <script type="module">
+        import './js/boundary/components/paso-card.js';
+    </script>
 </section>
 
 <!-- ── 3. CTA ── -->

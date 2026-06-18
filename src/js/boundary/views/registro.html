@@ -69,28 +69,19 @@
 
     <div id="sels-carreras" class="hidden">
         <div class="form-group">
-            <div class="sel-row">
-                <span class="prioridad-badge" title="Primera preferencia">1</span>
-                <select id="c1" aria-label="Primera preferencia" required>
-                    <option value="">— Primera opción (obligatoria) —</option>
-                </select>
-            </div>
+            <app-selector-prioridad id="c1" numero="1"
+                placeholder="— Primera opción (obligatoria) —" obligatorio>
+            </app-selector-prioridad>
         </div>
         <div class="form-group mt-md">
-            <div class="sel-row">
-                <span class="prioridad-badge prioridad-badge--secondary" title="Segunda preferencia">2</span>
-                <select id="c2" aria-label="Segunda preferencia">
-                    <option value="">— Segunda opción (opcional) —</option>
-                </select>
-            </div>
+            <app-selector-prioridad id="c2" numero="2"
+                placeholder="— Segunda opción (opcional) —">
+            </app-selector-prioridad>
         </div>
         <div class="form-group mt-md">
-            <div class="sel-row">
-                <span class="prioridad-badge prioridad-badge--muted" title="Tercera preferencia">3</span>
-                <select id="c3" aria-label="Tercera preferencia">
-                    <option value="">— Tercera opción (opcional) —</option>
-                </select>
-            </div>
+            <app-selector-prioridad id="c3" numero="3"
+                placeholder="— Tercera opción (opcional) —">
+            </app-selector-prioridad>
         </div>
     </div>
 
@@ -143,6 +134,7 @@
     import InscripcionesController from './js/control/inscripciones_controller.js';
     import CarrerasController    from './js/control/carreras_controller.js';
     import { store } from './js/infra/app_state.js';
+    import './js/boundary/components/selector-prioridad.js';
 
     const aspCtrl  = new AspirantesController();
     const inscCtrl = new InscripcionesController();
@@ -164,23 +156,16 @@
     const panelDuplicado = document.getElementById('panel-duplicado');
     const panelExito     = document.getElementById('panel-exito');
     const btnRegistrar   = document.getElementById('btn-registrar');
-    const selectIds      = ['c1','c2','c3'];
-    const placeholders   = ['— Primera opción (obligatoria) —','— Segunda opción (opcional) —','— Tercera opción (opcional) —'];
+    const selectores     = [document.getElementById('c1'), document.getElementById('c2'), document.getElementById('c3')];
 
-    // ── Cargar carreras en los selects ──
+    // ── Cargar carreras en los selectores ──
     carrCtrl.cargarTodas()
         .then(carreras => {
             if (!carreras.length) {
                 estadoCarreras.textContent = 'No hay carreras disponibles en este momento.';
                 return;
             }
-            const opts = carreras
-                .map(c => `<option value="${c.idCarrera}">${c.nombreCatalogoCarrera}</option>`)
-                .join('');
-            selectIds.forEach((id, i) => {
-                document.getElementById(id).innerHTML =
-                    `<option value="">${placeholders[i]}</option>${opts}`;
-            });
+            selectores.forEach(sel => sel.opciones = carreras);
             estadoCarreras.classList.add('hidden');
             selsCarreras.classList.remove('hidden');
         })
@@ -191,8 +176,8 @@
 
     // ── Nombre de carrera por id (para mostrar en el resumen) ──
     const nombreCarrera = (id) => {
-        const opt = document.querySelector(`#sels-carreras option[value="${id}"]`);
-        return opt?.textContent ?? id;
+        const sel = selectores.find(s => s.value === id);
+        return sel?.nombreSeleccionado ?? id;
     };
 
     // ── Envío del formulario ──
@@ -206,12 +191,12 @@
         if (!form.checkValidity()) { form.reportValidity(); return; }
 
         const dui = document.getElementById('dui').value.trim();
-        if (!document.getElementById('c1').value) {
+        if (!selectores[0].value) {
             document.querySelector('app-toast')?.show('Selecciona al menos una carrera como primera preferencia.', 4000, 'warning');
             return;
         }
 
-        const valoresCarreras = selectIds.map(id => document.getElementById(id).value).filter(v => v !== '');
+        const valoresCarreras = selectores.map(s => s.value).filter(v => v !== '');
         if (new Set(valoresCarreras).size < valoresCarreras.length) {
             document.querySelector('app-toast')?.show('No puedes seleccionar la misma carrera en más de una prioridad.', 4000, 'warning');
             return;
@@ -248,8 +233,8 @@
 
         // Paso 2-4: Inscripción y carreras (aspirante creado exitosamente)
         try {
-            const carrerasConPrioridad = selectIds
-                .map((id, i) => ({ idCarrera: document.getElementById(id).value, prioridad: i + 1 }))
+            const carrerasConPrioridad = selectores
+                .map((sel, i) => ({ idCarrera: sel.value, prioridad: i + 1 }))
                 .filter(c => c.idCarrera !== '');
 
             const resultado = await inscCtrl.inscribirConCarreras(store.aspirante?.id, carrerasConPrioridad);
