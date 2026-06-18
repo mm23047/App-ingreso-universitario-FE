@@ -1,0 +1,986 @@
+================================================================================
+AUDITORÍA TÉCNICA COMPLETA — NuevoIngresoWeb
+Proyecto: Sistema de Ingreso Universitario (UES)
+Fecha: 08 de junio de 2026
+Auditor: Análisis de código real (Claude Code)
+================================================================================
+
+
+================================================================================
+1. RESUMEN EJECUTIVO
+================================================================================
+
+NuevoIngresoWeb es una aplicación web de tipo SPA (Single-Page Application)
+construida completamente con JavaScript vanilla moderno (ES6+), sin frameworks
+de UI como React, Vue ni Angular. Está diseñada para funcionar como la capa
+cliente (frontend) de un sistema de ingreso universitario. Se comunica con un
+backend Java externo que corre en el puerto 9080.
+
+El proyecto implementa el patrón Boundary–Control–Entity (BCE) sobre JavaScript
+puro, con cuatro capas claramente separadas: boundary/ (vistas y componentes),
+control/ (controladores y DAOs), entity/ (modelos) e infra/ (infraestructura).
+
+Es también una Progressive Web App (PWA): tiene Service Worker, manifest.json,
+soporte offline parcial e instalación desde el navegador.
+
+No existe package.json ni ninguna herramienta de build (Webpack, Vite, esbuild,
+Parcel, Rollup). Todo el código se sirve tal como está escrito, directamente
+desde el sistema de archivos, a través de BrowserSync (instalado globalmente).
+
+Las librerías de prueba (Mocha, Chai, Sinon) están incluidas como archivos
+estáticos dentro del repositorio en src/test/js/lib/, sin npm ni node_modules.
+
+El backend (Java + Quarkus/Jakarta EE, endpoint /IngresoUniversitarioTPI135-
+1.0-SNAPSHOT/resources/v1/) NO está en este repositorio. Este repo es solo
+el cliente web.
+
+
+================================================================================
+2. ESTRUCTURA GENERAL DEL PROYECTO
+================================================================================
+
+NuevoIngresoWeb/
+├── .vscode/
+│   ├── tasks.json          — Tareas VSCode: lanzar BrowserSync (app + tests)
+│   └── launch.json         — Configs de debug/ejecución para Brave Browser
+└── src/                    — Raíz del servidor (BrowserSync sirve desde src/)
+    ├── index.html           — Redirección inmediata a pwa.html
+    ├── pwa.html             — Shell de la SPA: header, footer, <app-toast>,
+    │                          lógica del SW, instalación PWA, carga dinámica
+    │                          de vistas (router)
+    ├── offline.html         — Página mostrada sin conexión
+    ├── manifest.json        — Configuración PWA (nombre, íconos, pantallas)
+    ├── sw.js                — Service Worker v7: caché en 3 estrategias
+    │
+    ├── css/                 — Estilos (sin preprocesador, CSS puro)
+    │   ├── global.css       — Design tokens (variables CSS), reset, botones,
+    │   │                      formularios, cards, utilidades, app shell
+    │   ├── grid-layout.css  — Sistema de grid de 12 columnas
+    │   ├── responsive.css   — Media queries
+    │   ├── home.css
+    │   ├── carreras.css
+    │   ├── areas.css
+    │   ├── procesos.css
+    │   ├── registro.css
+    │   └── resultado.css
+    │
+    ├── img/                 — Íconos PWA (192×192, 512×512) y screenshots
+    │   └── screenshots/
+    │       └── generar-capturas.html  — Utilidad para generar capturas PWA
+    │
+    ├── demos/
+    │   └── contador.html    — Demo standalone del componente app-contador
+    │
+    └── js/
+        ├── boundary/        — CAPA DE PRESENTACIÓN
+        │   ├── components/  — Web Components reutilizables (Custom Elements)
+        │   │   ├── notificacion-toast.js   — <app-toast>
+        │   │   ├── contador.js             — <app-contador>
+        │   │   ├── arbol.js                — <app-arbol>
+        │   │   └── proceso-card.js         — <app-proceso-card>
+        │   └── views/       — Fragmentos HTML de cada ruta (cargados dinámicamente)
+        │       ├── home.html
+        │       ├── registro.html    — Contiene <script type="module"> inline
+        │       ├── carreras.html
+        │       ├── procesos.html
+        │       ├── areas.html
+        │       └── resultado.html
+        │
+        ├── control/         — CAPA DE CONTROL (Controladores + DAOs)
+        │   ├── default_dao.js              — Clase base: construye BASE_URL
+        │   ├── aspirantes_dao.js           — CRUD aspirantes + inscripciones
+        │   ├── aspirantes_controller.js    — Valida y registra aspirante
+        │   ├── carreras_dao.js             — GET carreras
+        │   ├── carreras_controller.js      — Carga y selecciona carreras
+        │   ├── carreras_elegida_dao.js     — CRUD carreras por inscripción
+        │   ├── carreras_elegida_controller.js
+        │   ├── inscripciones_dao.js        — GET/DELETE inscripción
+        │   ├── inscripciones_controller.js — Orquesta inscripción + carreras
+        │   ├── pruebas_admision_dao.js     — GET pruebas, activas
+        │   ├── pruebas_admision_controller.js
+        │   ├── examen_realizado_dao.js     — POST iniciar, GET preguntas,
+        │   │                                  GET por aspirante
+        │   ├── examen_controller.js        — Orquesta todo el flujo de examen
+        │   │                                  + consultarEstadoAspirante()
+        │   ├── respuesta_examen_dao.js     — POST respuesta individual + lote
+        │   ├── preguntas_dao.js            — GET opciones de pregunta
+        │   ├── turnos_dao.js               — GET turnos
+        │   ├── turnos_controller.js
+        │   ├── areas_dao.js                — GET áreas, temas por prueba
+        │   ├── areas_controller.js
+        │   ├── etapas_dao.js               — GET etapas de admisión
+        │   ├── etapas_controller.js
+        │   ├── procesos_controller.js      — Agrega pruebas+turnos+aulas en
+        │   │                                  paralelo con degradación
+        │   └── local_storage_dao.js        — Persiste IDs en localStorage
+        │
+        ├── entity/          — CAPA DE ENTIDAD (modelos de datos puros)
+        │   ├── Aspirante.js
+        │   ├── PruebaAdmision.js
+        │   ├── InscripcionPrueba.js
+        │   ├── Carrera.js
+        │   ├── CarrerasElegida.js
+        │   ├── ExamenRealizado.js
+        │   ├── PreguntasPorClave.js
+        │   ├── Pregunta.js
+        │   ├── Opcion.js
+        │   ├── RespuestaExamen.js
+        │   ├── AreaConocimiento.js
+        │   ├── Tema.js
+        │   ├── Turno.js
+        │   ├── EtapasAdmision.js
+        │   ├── Aula.js
+        │   ├── AsignacionAulaAspirante.js
+        │   ├── BancoRespuesta.js
+        │   ├── ClavesExamen.js
+        │   ├── CuposCarrera.js
+        │   ├── DisponibilidadAulaTurno.js
+        │   └── ProcesoAdmisionAspirante.js
+        │
+        └── infra/           — CAPA DE INFRAESTRUCTURA
+            ├── app_state.js              — Store global reactivo (Proxy)
+            ├── router.js                 — Routing hash-based (hashchange)
+            ├── notificaciones.js         — Helper: acceso global a app-toast
+            ├── utils/
+            │   └── worker-helper.js     — API Promise para el Web Worker
+            └── workers/
+                └── procesamiento.worker.js  — Web Worker: fetch en background
+
+    test/                    — SUITE DE PRUEBAS
+    └── js/
+        ├── lib/             — Librerías de test (archivos estáticos, sin npm)
+        │   ├── mocha/       — Mocha (mocha.js + mocha.css + mapa de fuente)
+        │   ├── chai/        — Chai (index.js + adaptadores)
+        │   └── sinon/       — Sinon (sinon.js)
+        │
+        ├── all_tests.html               — Runner: suite unitaria completa
+        ├── integration_tests_on.html    — Runner: integración con backend ON
+        ├── integration_tests_off.html   — Runner: integración con backend OFF
+        ├── contador_test.html           — Runner: solo pruebas del contador
+        │
+        ├── run-tests.js                 — Carga todos los tests unitarios
+        ├── run-integration-tests.js     — Carga integración (server-on)
+        ├── run-integration-tests-off.js — Carga integración (server-off)
+        ├── run-contador-tests.js        — Carga solo tests del contador
+        ├── node-test-setup.cjs          — Shims de browser para Node.js
+        │
+        ├── unit/
+        │   ├── dao/         — 11 archivos de prueba unitaria de DAOs
+        │   ├── control/     — 10 archivos de prueba unitaria de Controllers
+        │   └── infra/       — 3 archivos: app_state, router, local_storage_dao
+        │
+        ├── components/      — 4 archivos: arbol, contador, proceso-card, toast
+        └── integration/
+            ├── server-on/   — 14 archivos de integración (backend activo)
+            └── server-off/  — 14 archivos de integración (sin backend)
+
+
+================================================================================
+3. TABLA DE TECNOLOGÍAS UTILIZADAS
+================================================================================
+
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Tecnología             | ¿Para qué sirve?                         | ¿Dónde se usa?                        | ¿Qué archivos/carpetas?                      | Observaciones       |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| HTML5                  | Estructura semántica del documento       | Shell de la app, vistas, tests         | pwa.html, offline.html, index.html,          | Correcto. Semántica |
+|                        |                                          |                                        | views/*.html, *_tests.html, demos/           | apropiada.          |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| CSS3 (Custom Props.)   | Estilos visuales + design tokens         | Todo el sistema de diseño             | src/css/*.css (9 archivos)                   | Correcto. Variables |
+|                        |                                          |                                        |                                              | CSS como tokens.    |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| JavaScript ES6+        | Lógica de negocio, UI, infraestructura   | Todo el codebase JS                   | src/js/**/*.js                               | Central. Todo el    |
+| (ES Modules)           | entregada como módulos nativos           |                                        |                                              | proyecto es JS puro.|
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Web Components API     | Componentes reutilizables encapsulados   | Componentes de UI interactivos         | boundary/components/*.js                     | Uso avanzado.       |
+| (Custom Elements,      |                                          |                                        |                                              | Shadow DOM real,    |
+| Shadow DOM, Templates, |                                          |                                        |                                              | Constructable CSS.  |
+| Constructable CSS)     |                                          |                                        |                                              |                     |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Fetch API              | Comunicación HTTP con el backend         | Todos los DAOs, ProcesosController,   | control/default_dao.js, control/*_dao.js,    | Central. Es el      |
+|                        |                                          | ExamenController, pwa.html (manifest) | examen_controller.js, pwa.html               | único mecanismo     |
+|                        |                                          |                                        |                                              | de red del cliente. |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Proxy API              | Estado reactivo global (observer)        | Store centralizado de la aplicación   | infra/app_state.js                           | Correcto. Patrón    |
+|                        |                                          |                                        |                                              | observer limpio.    |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Service Worker API     | Caché offline, interceptar requests      | Registro y lógica del SW              | src/sw.js, pwa.html (registro)               | Bien implementado.  |
+| + Cache API            |                                          |                                        |                                              | 3 estrategias bien  |
+|                        |                                          |                                        |                                              | diferenciadas.      |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Web Workers API        | Ejecutar fetch en segundo plano          | Utilidad de procesamiento asíncrono   | infra/workers/procesamiento.worker.js,       | Correcto pero de    |
+|                        | (fuera del hilo principal)              |                                        | infra/utils/worker-helper.js                 | uso opcional: los   |
+|                        |                                          |                                        |                                              | DAOs no lo usan.    |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| localStorage API       | Persistir referencias (IDs) entre        | Turno y carrera actuales,             | control/local_storage_dao.js                 | Correcto. Solo      |
+|                        | sesiones del navegador                  | historial de selecciones               |                                              | guarda UUIDs, no    |
+|                        |                                          |                                        |                                              | objetos completos.  |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| AbortController        | Cancelar fetch obsoletos                 | Búsqueda en tiempo real de procesos   | control/procesos_controller.js (buscar())    | Uso preciso y       |
+|                        |                                          |                                        |                                              | correcto.           |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Promise.allSettled     | Paralelismo con degradación controlada   | Carga de pruebas+turnos+aulas         | control/procesos_controller.js (cargar())    | Correcto. Permite   |
+|                        |                                          |                                        |                                              | fallos parciales.   |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| CustomEvent / DOM API  | Comunicación entre capas de la SPA       | Routing, cambios de estado,           | infra/router.js, infra/app_state.js,         | Correcto. Desacopla |
+|                        |                                          | componentes Web                        | boundary/components/*.js, pwa.html           | capas correctamente.|
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| PWA Manifest           | Metadatos para instalación como app      | Configuración de la PWA               | src/manifest.json                            | Completo. Incluye   |
+| (Web App Manifest)     |                                          |                                        |                                              | screenshots para    |
+|                        |                                          |                                        |                                              | ambos form factors. |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Mocha                  | Test runner BDD (describe/it/before)     | Runner de todas las suites de prueba  | test/js/lib/mocha/, run-tests.js,            | Bundleado en repo.  |
+|                        |                                          |                                        | run-integration-tests*.js, *tests.html       | Sin npm.            |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Chai                   | Librería de aserciones (expect)          | Todas las aserciones de los tests     | test/js/lib/chai/, todos los *.test.js       | Bundleado en repo.  |
+|                        |                                          |                                        |                                              | Solo expect (BDD).  |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Sinon                  | Stubs, spies y mocks                     | Aislar fetch en tests unitarios       | test/js/lib/sinon/, unit/**/*.test.js        | Bundleado en repo.  |
+|                        |                                          |                                        |                                              | Se usa sinon.stub   |
+|                        |                                          |                                        |                                              | sobre window.fetch. |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| BrowserSync            | Servidor HTTP de desarrollo +            | Sirve la app (puerto 3000) y los      | .vscode/tasks.json (lanzarBrowserSync,       | No está en ningún   |
+|                        | live reload                              | archivos de prueba                    | lanzarMocha)                                 | package.json — debe |
+|                        |                                          |                                        |                                              | estar instalado     |
+|                        |                                          |                                        |                                              | globalmente con npm.|
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Node.js (shims)        | Entorno alternativo para tests           | Shims de APIs del browser             | test/js/node-test-setup.cjs                  | Infrautilizado:     |
+|                        | desde línea de comandos                  |                                        |                                              | no hay package.json |
+|                        |                                          |                                        |                                              | ni script de npm.   |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+| Brave Browser          | Navegador de ejecución y depuración      | Target del debugger de VSCode         | .vscode/launch.json (runtimeExecutable)      | Dependencia del     |
+| (Chrome DevTools)      |                                          |                                        |                                              | entorno del dev.    |
+|                        |                                          |                                        |                                              | Cualquier Chromium  |
+|                        |                                          |                                        |                                              | funciona igual.     |
++------------------------+------------------------------------------+---------------------------------------+----------------------------------------------+---------------------+
+
+
+================================================================================
+4. TECNOLOGÍAS DEL FRONTEND
+================================================================================
+
+--- HTML5 ---
+Qué es: lenguaje de marcado estándar para estructurar documentos web.
+Por qué existe: es la base de toda interfaz de usuario en el navegador.
+Cómo se usa en el proyecto:
+
+  - src/pwa.html: shell principal de la SPA. Define el <header> con
+    navegación de hash links (#/, #/carreras, etc.), el <main id="app-content">
+    donde el router inyecta las vistas, el <footer>, los elementos <app-toast>
+    y el botón de instalación PWA. Contiene un <script type="module"> con toda
+    la lógica de SPA, SW, PWA y routing.
+
+  - src/index.html: archivo de una sola función — redirigir inmediatamente a
+    pwa.html con <meta http-equiv="refresh">. Es el punto de entrada para
+    urls sin fragmento.
+
+  - src/offline.html: página fallback servida por el SW cuando no hay conexión
+    y la ruta no está en caché.
+
+  - src/js/boundary/views/*.html (6 archivos): fragmentos HTML cargados
+    dinámicamente por el router. NO son documentos completos (sin <html>,
+    <head> ni <body>). Cada uno contiene su propio <script type="module">
+    inline que inicializa los controladores de esa vista.
+
+  - src/test/js/*.html y lib/mocha/mocha.css: páginas HTML que cargan la
+    suite de Mocha y ejecutan las pruebas en el navegador.
+
+  - src/demos/contador.html: demo independiente del componente app-contador.
+
+Semántica usada: <header>, <nav>, <main>, <footer>, <form>, <label>, <button>,
+<select>, <input>, roles ARIA (role="alert", role="region", role="button").
+
+Coherencia: correcta. Las vistas son fragmentos HTML, no documentos completos,
+lo que es coherente con una SPA que inyecta contenido en un contenedor.
+
+
+--- CSS3 (Custom Properties, Grid, Flexbox) ---
+Qué es: lenguaje de estilos del navegador. Este proyecto usa CSS puro sin
+preprocesadores (no hay Sass, Less, ni PostCSS).
+Por qué existe: define la apariencia visual de toda la interfaz.
+Cómo se usa en el proyecto:
+
+  - global.css: el archivo más importante. Define las design tokens (variables
+    CSS como --color-primary: #1E3A8A, --space-md: 1rem, --radius-lg: 12px,
+    --transition: 200ms ease), el reset box-sizing universal, tipografía base,
+    botones (.btn, .btn-primary, .btn-outline), formularios, cards (.card),
+    spinner de carga (#loading-overlay), app shell (.app-header, .app-nav,
+    .app-footer), badges, y utilidades de layout y texto.
+
+  - grid-layout.css: implementa un sistema de columnas CSS Grid (.grid,
+    .grid-cols-2, .gap-md, etc.) reutilizable en las vistas.
+
+  - responsive.css: media queries para breakpoints mobile/tablet/desktop.
+
+  - Los 6 CSS de vista (home, carreras, areas, procesos, registro, resultado):
+    estilos específicos de cada ruta. Solo se aplican a elementos de esa vista.
+
+  - Los componentes Web (arbol.js, proceso-card.js, notificacion-toast.js)
+    tienen sus propios estilos dentro del Shadow DOM: arbol.js usa
+    Constructable Stylesheets (new CSSStyleSheet() + replaceSync() +
+    adoptedStyleSheets), proceso-card.js y notificacion-toast.js usan
+    <style> dentro del template HTML. Estos estilos están encapsulados y
+    no afectan ni son afectados por el CSS global.
+
+Coherencia: muy buena. El uso de variables CSS permite consistencia visual
+total. La separación entre CSS global y CSS de componente (Shadow DOM) es
+arquitectónicamente correcta y evita colisiones.
+
+
+--- JavaScript ES6+ con ES Modules ---
+Qué es: JavaScript moderno con módulos nativos del navegador (import/export).
+No se usa ningún bundler ni transpilador.
+Por qué existe: es el lenguaje de programación del frontend completo.
+Características ES6+ usadas en el proyecto:
+
+  - import / export estáticos y dinámicos (en run-tests.js: await import(...))
+  - async / await (todos los DAOs y controllers)
+  - Destructuring ({ store, subscribe } = from '...')
+  - Nullish coalescing (??) y Optional chaining (?.) extensivamente
+  - Arrow functions, template literals, spread operator
+  - class (todos los DAOs, controllers, entities, components)
+  - static class fields (LocalStorageDao.TURNOS_KEY = '...')
+  - Proxy (app_state.js)
+  - Promise.all y Promise.allSettled
+  - Map y Set (procesos_controller.js)
+  - AbortController
+  - URL constructor (worker-helper.js: new URL('../workers/...', import.meta.url))
+  - import.meta.url (worker-helper.js para localizar el worker)
+
+Coherencia: excelente. El uso de ES Modules nativos elimina la necesidad de
+un bundler, lo que simplifica la arquitectura. Funciona bien con BrowserSync
+y con el SW (que sí los soporta).
+
+
+--- Web Components API (Custom Elements + Shadow DOM + HTML Templates) ---
+Qué es: estándar del navegador para crear elementos HTML reutilizables con
+encapsulación de estilos y comportamiento.
+Por qué existe: permite crear widgets independientes del resto del sistema,
+sin necesidad de un framework externo.
+Cómo se usa en el proyecto:
+
+  Hay 4 componentes definidos con customElements.define():
+
+  1. <app-toast> (notificacion-toast.js): sistema de notificaciones tipo
+     toast (esquina inferior derecha). Usa Shadow DOM con dos templates:
+     uno para el contenedor y uno para cada ítem individual. Expone los
+     métodos show(), success(), error(), warning(), info(). Los toasts tienen
+     animación CSS (opacity + translateX) y se cierran automáticamente con
+     setTimeout. Usa Shadow DOM anidado (los ítems individuales también tienen
+     su propio Shadow DOM dentro del contenedor). Implementa role="alert"
+     y aria-live="assertive" para accesibilidad.
+
+  2. <app-contador> (contador.js): contador automático con auto-incremento
+     por intervalo. Observa atributos HTML ('inicial', 'intervalo') con
+     observedAttributes + attributeChangedCallback. Implementa lifecycle
+     completo: connectedCallback, disconnectedCallback, attributeChangedCallback.
+     Emite el evento personalizado 'contador-cambio'. Es el componente más
+     "académico" del proyecto — tiene más APIs de Web Components que los demás.
+
+  3. <app-arbol> (arbol.js): árbol jerárquico de 3 niveles (Área → Tema →
+     Subtema). Usa Constructable Stylesheets (la API más moderna). Recibe
+     datos mediante la propiedad setter .area = objAreaConocimiento. Maneja
+     accesibilidad con aria-controls, aria-expanded, tabindex="0", y soporte
+     de teclado (Enter/Espacio). stopPropagation() previene bubbling entre
+     niveles del árbol.
+
+  4. <app-proceso-card> (proceso-card.js): card para mostrar un proceso de
+     admisión. Recibe datos con .proceso = data. Emite el evento personalizado
+     'proceso-seleccionado' (bubbles: true, composed: true para atravesar
+     Shadow DOM). Tiene una función esc() de escape de HTML para prevenir XSS
+     al insertar nombres de sede dinámicamente. Usa fmtFecha() para formato
+     de fechas localizado ('es-SV').
+
+Coherencia: excelente. Los componentes encapsulan correctamente su estado y
+estilos. El uso de composed:true en los eventos es correcto para que los
+listeners fuera del Shadow DOM puedan escuchar. La mezcla de Constructable
+Stylesheets (arbol) y estilos en template (los demás) es inconsistente pero
+funcional.
+
+
+--- DOM API y Eventos del Navegador ---
+Qué es: interfaz del navegador para manipular la estructura del documento y
+responder a interacciones.
+Por qué existe: permite la interacción entre el usuario y la aplicación.
+Cómo se usa en el proyecto:
+
+  - document.getElementById(), querySelector(), innerHTML (para inyectar
+    vistas y contenido dinámico).
+  - addEventListener en botones, formularios, links de navegación, y eventos
+    globales (hashchange, load, offline, online, route-changed, beforeinstallprompt,
+    appinstalled).
+  - CustomEvent para comunicación entre módulos desacoplados:
+    * 'state-changed' emitido por el Proxy en app_state.js
+    * 'route-changed' emitido por router.js
+    * 'proceso-seleccionado' emitido por <app-proceso-card>
+    * 'contador-cambio' emitido por <app-contador>
+  - dispatchEvent en window para eventos globales.
+  - requestAnimationFrame (en notificacion-toast.js para activar la animación
+    CSS en el siguiente frame después de añadir el elemento).
+  - document.createElement / createDocumentFragment / cloneNode (en todos
+    los Web Components).
+  - form.checkValidity() y form.reportValidity() en registro.html para
+    validación HTML5 nativa.
+
+Coherencia: correcto. La comunicación entre módulos a través de CustomEvents
+globales es el mecanismo elegido y se aplica consistentemente.
+
+
+--- localStorage API ---
+Qué es: almacenamiento clave-valor persistente en el navegador (hasta ~5-10MB).
+Por qué existe: permite conservar selecciones del usuario entre sesiones.
+Cómo se usa en el proyecto:
+
+  - local_storage_dao.js: clase estática con métodos para guardar/recuperar
+    IDs de turno y carrera. Solo guarda UUID strings, nunca objetos completos
+    (decisión de diseño documentada en el código: "Responsabilidad: guardar
+    SOLO códigos/IDs de entidades en localStorage").
+  - pwa.html: usa localStorage.getItem / setItem con la clave 'pwa-instalada'
+    para recordar si el usuario ya instaló la PWA.
+  - Los controladores usan LocalStorageDao para persistir el turno actual
+    y la carrera actual del aspirante.
+
+Coherencia: correcto. La restricción de solo guardar IDs es una decisión
+explícita y bien justificada.
+
+
+================================================================================
+5. TECNOLOGÍAS DEL BACKEND
+================================================================================
+
+NOTA IMPORTANTE: Este repositorio (NuevoIngresoWeb) NO contiene código de
+backend. Es exclusivamente el cliente web (frontend). El backend es una
+aplicación Java separada.
+
+Lo que se puede inferir del código del frontend sobre el backend:
+
+--- Java / Jakarta EE (JAX-RS + JPA/Hibernate) ---
+Qué es: tecnologías Java para REST APIs y persistencia.
+Por qué existe: procesa la lógica de negocio server-side y persiste los datos.
+Evidencia en este repositorio:
+
+  Los comentarios en los archivos de entidad documentan la capa Java:
+  - // BE: AspirantesDato  @Table(name="aspirante_datos")
+  - // BE: ExamenRealizado  @Table(name="examen_realizado")
+  - // PK: UUID id  (columna id_aspirante, getter getId() → JSON key "id")
+  - // Relaciones: inscripcionesPrueba @ManyToOne InscripcionesPrueba (NOT NULL, LAZY → JOIN FETCH)
+
+  El nombre del artefacto Java visible en la URL del backend:
+    IngresoUniversitarioTPI135-1.0-SNAPSHOT
+
+  Los comentarios en los DAOs documentan los @Path de los resources JAX-RS:
+  - // Resource: AspirantesDatoResource  @Path("aspirantes")
+  - // Resource: CarrerasElegidaResource  @Path("inscripciones_prueba/{idInscripcion}/carreras")
+  - // Resource: ExamenRealizadoResource  @Path("examen_realizado")
+
+  El ErrorNegocioDTO estructurado con campos tipo y mensaje indica Bean
+  Validation o manejo de excepciones de negocio customizado.
+
+--- REST / HTTP ---
+La comunicación entre frontend y backend es REST puro sobre HTTP:
+  - Puerto 9080 (Quarkus/WildFly/Payara typical)
+  - Base: /IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/
+  - Verbos usados: GET, POST, PUT, DELETE, PATCH
+  - Content-Type: application/json en requests con body
+  - Respuestas: JSON deserializado por el frontend y mapeado a clases Entity
+
+Endpoints confirmados desde el código de los DAOs:
+  POST   /aspirantes
+  GET    /aspirantes/{id}
+  DELETE /aspirantes/{id}
+  GET    /aspirantes/{id}/inscripciones
+  POST   /aspirantes/{id}/inscripciones
+  GET    /carreras
+  GET    /carreras/{id}
+  GET    /pruebas_admision
+  GET    /pruebas_admision/activas
+  GET    /pruebas_admision/{id}
+  GET    /pruebas_admision?first=0&max=200&buscar=...
+  GET    /inscripciones_prueba/{id}/carreras
+  POST   /inscripciones_prueba/{id}/carreras
+  PUT    /inscripciones_prueba/{id}/carreras/{id}
+  DELETE /inscripciones_prueba/{id}/carreras/{id}
+  PATCH  /inscripciones_prueba/{id}/carreras/reordenar
+  POST   /examen_realizado
+  GET    /examen_realizado/{id}
+  GET    /examen_realizado/{id}/preguntas
+  GET    /examen_realizado/aspirante/{id}
+  GET    /examen_realizado/buscar?dui=...   (o ?correo=...)
+  GET    /preguntas/{id}/opciones
+  POST   /respuestas_examen
+  POST   /respuestas_examen/lote
+  GET    /respuestas_examen/examen/{id}
+  GET    /turnos
+  GET    /turnos/{id}
+  GET    /areas
+  GET    /areas/{id}/temas
+  GET    /pruebas_admision/{id}/areas
+  GET    /etapas
+  GET    /aulas_turnos/disponibilidad
+  DELETE /inscripciones_prueba/{id}
+
+Coherencia: el frontend consume fielmente la API REST que el backend expone.
+La nomenclatura de los endpoints es consistente (snake_case en URLs, camelCase
+en JSON) y la selección de verbos HTTP es la correcta para cada operación.
+
+
+================================================================================
+6. TECNOLOGÍAS DE BASE DE DATOS
+================================================================================
+
+No hay código de base de datos en este repositorio. Sin embargo, los comentarios
+en los archivos de entidad del frontend documentan el modelo relacional del
+backend Java:
+
+Tablas inferidas (anotaciones @Table en comentarios):
+  - aspirante_datos
+  - examen_realizado  (PK: UUID id_examen, UNIQUE: id_inscripcion + id_etapa)
+  - inscripciones_prueba
+  - carreras_elegida (o similar)
+  - claves_examen
+  - etapas_admision
+  - preguntas_por_clave
+  - banco_preguntas (banco de preguntas)
+
+Relaciones documentadas en código:
+  ExamenRealizado.inscripcionesPrueba → @ManyToOne InscripcionesPrueba
+  ExamenRealizado.claveExamen         → @ManyToOne ClavesExamen (NOT NULL)
+  ExamenRealizado.etapaAdmision       → @ManyToOne EtapasAdmision (NOT NULL)
+  (carga LAZY → JOIN FETCH según comentarios)
+
+Tipos de datos identificados:
+  - PK tipo UUID (todos los IDs usan UUIDs, no enteros secuenciales)
+  - OffsetDateTime para fechas con zona horaria (fechaRealizacion)
+  - Enums como estados: 'INSCRITO', 'PENDIENTE', 'ADMITIDO', 'NO_ADMITIDO'
+  - Boolean (activa, usaSillaRuedas)
+
+El motor de base de datos más probable es PostgreSQL (común con Quarkus/WildFly
+y confirmado por el enunciado del proyecto TPI135), aunque no existe en este
+repo evidencia directa de SQL, scripts DDL ni archivos de configuración de BD.
+
+
+================================================================================
+7. TECNOLOGÍAS DE PRUEBAS
+================================================================================
+
+--- Mocha ---
+Qué es: framework de testing BDD/TDD para JavaScript. Provee describe(), it(),
+before(), beforeEach(), after(), afterEach(). Versión: incluida como archivo
+estático en el repositorio (src/test/js/lib/mocha/).
+Por qué existe: es el runner principal de toda la suite de pruebas.
+Cómo se usa:
+  - Se carga con <script src="lib/mocha/mocha.js"> en los HTML de prueba.
+  - Se inicializa con mocha.setup('bdd') en los archivos run-*.js.
+  - Se ejecuta con mocha.run() después de cargar todos los tests.
+  - Renderiza los resultados en el elemento <div id="mocha">.
+  - En los tests del servidor-off, se usa this.timeout(5000) para pruebas
+    que esperan que el fetch falle (error de red).
+  - La suite tiene 5 runners HTML:
+    * all_tests.html → run-tests.js → carga 24 archivos (unitarios + components)
+    * integration_tests_on.html → run-integration-tests.js → 14 archivos
+    * integration_tests_off.html → run-integration-tests-off.js → 14 archivos
+    * contador_test.html → run-contador-tests.js → 1 archivo
+    * (contador_test.html es un runner adicional para el componente individual)
+Coherencia: correcto. La separación en múltiples runners HTML es una decisión
+razonable que permite ejecutar cada suite de forma independiente.
+
+
+--- Chai ---
+Qué es: librería de aserciones BDD/TDD. Provee expect(), assert() y should().
+Versión: incluida como archivo estático (src/test/js/lib/chai/).
+Por qué existe: proporciona aserciones legibles y expresivas.
+Cómo se usa:
+  - Solo se usa el estilo expect (BDD): import { expect } from '../../lib/chai/index.js'
+  - Se usan cadenas de aserciones como:
+    expect(resultado).to.be.instanceOf(Aspirante)
+    expect(resultado.id).to.equal('uuid-abc')
+    expect(error.tipo).to.equal('DUI_DUPLICADO')
+    expect(capturedOpts.method).to.equal('POST')
+    expect(body).to.have.property('pruebaAdmision')
+  - Los adaptadores register-assert.js, register-expect.js y register-should.js
+    están disponibles pero solo se usa register-expect en los tests reales.
+Coherencia: muy bueno. El estilo expect es consistente en toda la suite.
+
+
+--- Sinon ---
+Qué es: librería para stubs, spies y mocks de JavaScript.
+Versión: incluida como archivo estático (src/test/js/lib/sinon/sinon.js).
+Por qué existe: permite interceptar y controlar el comportamiento de fetch
+en las pruebas unitarias sin hacer llamadas reales a la red.
+Cómo se usa:
+  - sinon.stub(window, 'fetch').resolves({...}) para reemplazar fetch global
+    con una respuesta controlada.
+  - En algunos tests, se asigna window.fetch = (url, opts) => {...} directamente
+    para capturar la URL y las opciones del request (verificar el contrato HTTP).
+  - sinon.restoreAll() en beforeEach/afterEach para limpiar entre tests.
+  - En los tests de integración (server-off/server-on) NO se usa Sinon:
+    los tests de integración hacen fetch real, con el backend real o esperan
+    fallos de red reales.
+Coherencia: correcto. Sinon solo se usa en los tests unitarios donde tiene
+sentido. Las pruebas de integración no lo usan, lo que es la práctica correcta.
+
+
+--- BrowserSync ---
+Qué es: servidor HTTP de desarrollo con live reload.
+Por qué existe: sirve los archivos del proyecto para que el navegador pueda
+cargarlos via http:// (los ES Modules nativos y Service Workers requieren HTTP,
+no pueden funcionar con file://).
+Cómo se usa en el proyecto:
+  - Tarea 'lanzarBrowserSync' en tasks.json:
+    "browser-sync start --server src -f '**/*' ./src/ --no-open"
+    → sirve desde el directorio src/ en http://localhost:3000/
+    → se usa para ejecutar la aplicación (Correr Web)
+  - Tarea 'lanzarMocha' en tasks.json:
+    "browser-sync start --server ./ -f '**/*' ./ --no-open"
+    → sirve desde la raíz del proyecto (necesario porque los tests importan
+      archivos desde ../../js/control/... subiendo de src/test/js/)
+    → se usa para ejecutar los tests (Mocha Test, Integración Backend ON/OFF)
+  - Ambas tareas tienen isBackground: true y presentación "silent".
+  - La tarea 'detenerBrowserSync' ejecuta el comando de terminar tareas.
+  - NOTA: BrowserSync no está en ningún package.json. Debe estar instalado
+    globalmente (npm install -g browser-sync) en la máquina de desarrollo.
+
+Coherencia: correcto pero frágil. La dependencia en una herramienta instalada
+globalmente (sin package.json) dificulta la reproducibilidad del entorno en
+otras máquinas.
+
+
+--- node-test-setup.cjs (shims de Node.js) ---
+Qué es: archivo CommonJS con polyfills de APIs del browser para Node.js.
+Por qué existe: permite ejecutar los tests desde la línea de comandos con
+Node.js (o mocha CLI) en lugar del navegador.
+Qué shims provee: window (= global), dispatchEvent, addEventListener,
+CustomEvent, localStorage (en memoria), document.querySelector/getElementById,
+navigate, window.location (hostname + hash).
+Estado actual: el archivo existe pero NO hay package.json ni scripts de npm
+que lo referencien. La forma primaria de correr los tests es el navegador.
+Coherencia: este archivo está infrautilizado. Si no se tiene configurado el
+entorno Node para ejecutarlo, cumple ninguna función activa. Es un residuo
+de una intención de soporte dual (browser + Node) que quedó incompleta.
+
+
+================================================================================
+8. TECNOLOGÍAS DE INFRAESTRUCTURA / EJECUCIÓN
+================================================================================
+
+--- Service Worker (Infraestructura PWA) ---
+Archivo: src/sw.js
+Versión del caché: 'ingreso-universitario-v7'
+Qué hace: intercepta todas las peticiones GET de la aplicación y aplica
+una de tres estrategias:
+
+  1. Network-first para el backend (detectado por /localhost:9080/ en la URL):
+     intenta la red, si OK guarda en caché, si falla devuelve la versión
+     cacheada o un 503. Garantiza datos frescos cuando hay conexión.
+
+  2. Network-first para HTML (navegaciones y archivos .html):
+     siempre intenta la red primero para garantizar la versión más reciente
+     de las vistas. Si falla, usa la caché, y como último recurso sirve
+     /offline.html.
+
+  3. Cache-first para CSS, JS e imágenes:
+     revisa la caché primero (más rápido), si no está ahí va a la red y
+     guarda el resultado. Acelera la carga de assets estáticos.
+
+  Pre-cacheo en install: 15 assets estáticos (pwa.html, offline.html,
+  CSS globales, JS de infra, componentes base, manifest, íconos, screenshots).
+
+  Limpieza de cachés viejas en activate: elimina todos los caches cuyo
+  nombre no sea el actual (CACHE_NAME), luego llama clients.claim().
+
+  Manejo de skipWaiting via mensaje: cuando llega 'SKIP_WAITING' desde
+  el cliente (pwa.html lo envía al detectar un SW esperando), activa la
+  nueva versión inmediatamente.
+
+Coherencia: excelente. Las tres estrategias están bien diferenciadas y son
+apropiadas para sus respectivos tipos de contenido.
+
+
+--- Routing Hash-Based (infra/router.js) ---
+Qué es: sistema de navegación SPA basado en el fragmento URL (window.location.hash).
+Por qué existe: permite la ilusión de múltiples páginas sin recargar el
+documento, y sin necesidad de configuración del servidor (el servidor no
+necesita manejar rutas — todas sirven pwa.html).
+Rutas definidas:
+  '/'          → home.html
+  '/carreras'  → carreras.html
+  '/registro'  → registro.html
+  '/procesos'  → procesos.html
+  '/areas'     → areas.html
+  '/resultado' → resultado.html
+
+Comportamiento:
+  - Escucha eventos 'hashchange' y 'load'.
+  - Actualiza store.route y emite 'route-changed' con { ruta, nombre }.
+  - pwa.html escucha 'route-changed' y llama _cargarVista(nombre).
+  - _cargarVista hace fetch('views/{nombre}.html'), inyecta en #app-content,
+    y re-ejecuta los <script type="module"> del fragmento (necesario porque
+    innerHTML no ejecuta scripts automáticamente).
+  - Manejo offline: si no hay conexión y la ruta no es '/', redirige a '/'
+    y muestra un toast de advertencia.
+  - navigate('/ruta') simplemente establece window.location.hash.
+
+Coherencia: muy coherente. La separación entre router (qué cargó) y pwa.html
+(cómo lo muestra) es correcta. El re-ejecución de scripts inline es necesaria
+por la naturaleza del innerHTML y es la solución estándar para este patrón.
+
+
+--- State Management (infra/app_state.js) ---
+Qué es: módulo de estado global reactivo basado en el Proxy nativo de JavaScript.
+Por qué existe: centraliza el estado de la aplicación para que los diferentes
+módulos puedan compartir datos (aspirante activo, inscripción, examen, etc.)
+sin acoplamiento directo entre ellos.
+Cómo funciona:
+  - Un objeto _state plano contiene todas las propiedades relevantes.
+  - Un Proxy envuelve _state y en su trampa set() emite 'state-changed'
+    via dispatchEvent global, y notifica callbacks específicos registrados
+    con subscribe().
+  - subscribe(prop, callback) registra un listener para una propiedad concreta
+    y devuelve una función de cancelación.
+  - resetStore() reinicia todas las propiedades a su valor inicial.
+Estado inicial: aspirante, prueba, etapa, inscripcionActiva, carreraSeleccionada,
+carrerasElegidas, turnoSeleccionado, examenActivo, carreras, turnos, preguntas,
+notificaciones, loading, route.
+Uso en la app:
+  - pwa.html suscribe 'loading' para mostrar/ocultar el overlay de carga.
+  - Los controllers leen store.inscripcionActiva?.idInscripcionPrueba y
+    similares para tomar decisiones de negocio.
+  - El router actualiza store.route.
+
+Coherencia: excelente. Es el equivalente de un mini-Redux o Vuex implementado
+en ~57 líneas de código estándar. Apropiado para el tamaño del proyecto.
+
+
+--- Web Worker (infra/workers/procesamiento.worker.js) ---
+Qué es: script que corre en un hilo separado del hilo principal del navegador.
+Por qué existe: permite ejecutar peticiones fetch sin bloquear el UI thread.
+Arquitectura:
+  - procesamiento.worker.js: recibe mensajes con { id, url, method, body },
+    hace fetch, y responde con { id, success, data/error }.
+  - worker-helper.js: wrapper que mantiene un worker singleton, gestiona un
+    Map de promesas pendientes por ID, y expone ejecutarWorker(url, options)
+    y terminarWorker().
+Uso actual: el worker existe y está bien implementado, pero no se observa
+que los DAOs del proyecto lo usen directamente. Los DAOs usan fetch() directo.
+Coherencia: el worker es infraestructura preparada pero actualmente no es
+el camino primario de comunicación HTTP. Es un recurso disponible que podría
+ser adoptado por los DAOs para mejorar la resiliencia del UI.
+
+
+--- VSCode Launch Configurations (.vscode/launch.json) ---
+Qué es: configuraciones de lanzamiento del debugger de VSCode para Chrome/Brave.
+Por qué existe: facilita el desarrollo y la depuración con un único click.
+Configuraciones definidas:
+  1. "Correr Web" → abre Brave en http://localhost:3000/
+     preLaunchTask: lanzarBrowserSync (sirve desde src/)
+     postDebugTask: detenerBrowserSync
+  2. "Mocha Test" → abre Brave en http://localhost:3000/src/test/js/all_tests.html
+     preLaunchTask: lanzarMocha (sirve desde raíz del proyecto)
+  3. "Integración — Backend ON" → abre integration_tests_on.html
+  4. "Integración — Backend OFF" → abre integration_tests_off.html
+Todas usan Brave Browser en la ruta específica del equipo del desarrollador:
+C:\Users\estua\AppData\Local\BraveSoftware\Brave-Browser\Application\brave.exe
+Coherencia: funcional para el entorno de desarrollo del equipo. La ruta
+hardcodeada a Brave es la única debilidad — no funcionará en otro equipo
+sin ajustar manualmente el archivo.
+
+
+--- VSCode Tasks (.vscode/tasks.json) ---
+Qué es: automatizaciones de shell definidas para VSCode.
+Tareas:
+  1. lanzarBrowserSync: sirve la app desde src/
+  2. lanzarMocha: sirve el proyecto completo para las pruebas (desde raíz)
+  3. detenerBrowserSync: ejecuta el comando de terminar todas las tareas
+     de VSCode mediante la variable ${input:terminate}.
+Coherencia: correcto y bien estructurado. Las dos configuraciones de
+BrowserSync son necesarias porque las rutas de importación en los tests
+suben dos directorios (../../js/...) requiriendo la raíz como base.
+
+
+================================================================================
+9. OBSERVACIONES DE COHERENCIA ARQUITECTÓNICA
+================================================================================
+
+[FORTALEZA] Separación de responsabilidades (BCE) aplicada con consistencia
+  El proyecto sigue el patrón Boundary-Control-Entity de forma disciplinada.
+  Los DAOs solo hacen HTTP + mapeo a entidades. Los controllers contienen la
+  lógica de negocio + manejo de estado + notificaciones. Las entidades son
+  clases de datos sin lógica. Los components solo renderizan y emiten eventos.
+  No hay mezcla de responsabilidades entre capas.
+
+[FORTALEZA] Abstracciones en el nivel correcto
+  DefaultDao centraliza la construcción de BASE_URL. Todos los DAOs heredan
+  de él. El patrón _mapear() en cada DAO encapsula la conversión JSON→Entidad.
+  notificaciones.js es un helper de una sola línea que centraliza el acceso
+  al <app-toast>, evitando document.querySelector en múltiples lugares.
+
+[FORTALEZA] Manejo de errores estructurado
+  Los DAOs de aspirantes distinguen errores HTTP genéricos de errores de
+  negocio del backend (ErrorNegocioDTO) con campos tipo ('DUI_DUPLICADO',
+  'CORREO_DUPLICADO', 'EDAD_MINIMA') y mensajeNegocio. Los controllers
+  capturan estos errores y muestran mensajes apropiados al usuario. Los
+  tests unitarios verifican este contrato explícitamente.
+
+[FORTALEZA] Suite de pruebas con cobertura real
+  Existen 28 archivos de test confirmados en el repositorio:
+  - 11 tests unitarios de DAOs (unit/dao/)
+  - 10 tests unitarios de Controllers (unit/control/)
+  - 3 tests unitarios de infraestructura (unit/infra/)
+  - 4 tests unitarios de componentes Web (components/)
+  - 14 tests de integración con backend activo (integration/server-on/)
+  - 14 tests de integración con backend apagado (integration/server-off/)
+  Los tests verifican contratos HTTP reales (método, URL, body, mapeo de
+  respuesta) no solo comportamiento superficial.
+
+[FORTALEZA] PWA bien implementada
+  Service Worker v7 con estrategias diferenciadas por tipo de recurso,
+  manejo de skipWaiting para actualizaciones sin intervención del usuario,
+  limpieza de cachés antiguas en activate, manifest completo con screenshots
+  para desktop y mobile, detección de modo standalone y flag persistente.
+
+[OBSERVACIÓN] Web Worker infrautilizado
+  procesamiento.worker.js y worker-helper.js están bien implementados pero
+  los DAOs no los usan — hacen fetch() directo. El worker es infraestructura
+  disponible que no se activó. No es un problema funcional, pero es código
+  que existe sin un rol activo en el flujo principal.
+
+[OBSERVACIÓN] Scripts inline en las vistas HTML
+  Las 6 vistas en boundary/views/*.html tienen <script type="module"> inline.
+  El código de estos scripts es sustancial (registro.html tiene ~160 líneas
+  de JavaScript inline). La re-ejecución de estos scripts por el router
+  (cloneando el elemento script con document.createElement) es el mecanismo
+  estándar para este patrón, pero dificulta la modularización. No es un
+  defecto arquitectónico — es una limitación conocida de la carga dinámica
+  de fragmentos HTML con scripts.
+
+[OBSERVACIÓN] Sin package.json ni gestión de dependencias
+  No existe ningún package.json. Las librerías de prueba (Mocha, Chai, Sinon)
+  están incluidas directamente como archivos en el repositorio. BrowserSync
+  se asume instalado globalmente. Esto simplifica la configuración inicial
+  pero hace el entorno menos reproducible en otra máquina.
+
+[OBSERVACIÓN] node-test-setup.cjs sin infraestructura de soporte
+  El archivo existe con shims bien escritos para ejecutar los tests en Node.js,
+  pero no hay package.json con scripts ni instrucciones de uso. Sugiere una
+  intención de doble soporte (browser + Node) que no se completó.
+
+[OBSERVACIÓN] URL del backend hardcodeada a puerto 9080
+  DefaultDao construye la URL como http://${window.location.hostname}:9080/...
+  El hostname se toma del navegador (lo que permite que funcione tanto en
+  localhost como en otra IP de red), pero el puerto 9080 y la ruta del
+  artefacto Java son fijas. No afecta el funcionamiento en desarrollo pero
+  requeriría modificación para un despliegue en otro entorno.
+
+[OBSERVACIÓN] La función btn-recuperar-cuenta está incompleta
+  En registro.html, el botón "Recuperar acceso a mi cuenta" solo muestra un
+  toast de advertencia indicando que la función no está disponible. No es un
+  defecto técnico — es una feature pendiente documentada visualmente para
+  el usuario. La vista muestra el botón correctamente solo cuando ocurre un
+  conflicto de DUI/correo duplicado.
+
+[OBSERVACIÓN] Consistencia en Shadow DOM styles
+  arbol.js usa Constructable Stylesheets (adoptedStyleSheets), que es la
+  API más moderna. Los demás componentes usan <style> dentro de los templates.
+  Ambos enfoques son correctos y funcionan, pero la inconsistencia podría
+  confundir. No afecta el comportamiento.
+
+[POSITIVO] Accesibilidad cuidada
+  Los componentes Web usan ARIA: aria-expanded, aria-controls, aria-label,
+  aria-live="assertive", role="alert", role="region", role="button",
+  tabindex="0". Los formularios usan <label for="...">. Los botones tienen
+  texto descriptivo. La navegación por teclado (Enter/Espacio) está
+  implementada en app-arbol. El formulario de registro tiene campo
+  específico para accesibilidad (usaSillaRuedas).
+
+[POSITIVO] Escape de HTML en componentes dinámicos
+  proceso-card.js implementa la función esc() que escapa &, <, >, " para
+  prevenir XSS al insertar nombres de sede dinámicamente en el innerHTML.
+  Es una medida de seguridad correcta y bien ubicada.
+
+[POSITIVO] Degradación controlada en ProcesosController
+  cargar() usa Promise.allSettled para hacer las 3 peticiones en paralelo
+  (pruebas, turnos, disponibilidad de aulas). Si turnos o aulas fallan,
+  la vista sigue cargando con los datos disponibles y registra avisos.
+  Solo si el endpoint principal (pruebas_admision) falla, se lanza un error.
+  Es un diseño de resiliencia correcto para datos parcialmente opcionales.
+
+
+================================================================================
+10. CONCLUSIÓN FINAL
+================================================================================
+
+¿Qué tecnologías son realmente CENTRALES en el proyecto?
+
+  1. JavaScript ES6+ con ES Modules: es el lenguaje de todo el proyecto.
+     Sin él no existe nada.
+  2. Fetch API: es el único mecanismo de comunicación con el backend. Todos
+     los flujos de negocio lo requieren.
+  3. Web Components API (Custom Elements + Shadow DOM): define los 4
+     componentes reutilizables que estructuran la UI interactiva.
+  4. Service Worker + Cache API: habilita la PWA y el soporte offline.
+  5. HTML5 + CSS3: la estructura y el diseño visual de toda la interfaz.
+  6. Proxy API (app_state.js): la reactividad del estado global.
+
+
+¿Cuáles son de SOPORTE?
+
+  7. localStorage API: soporte de persistencia ligera entre sesiones.
+  8. AbortController: soporte para cancelar búsquedas obsoletas.
+  9. PWA Manifest: soporte para instalación como aplicación.
+  10. CustomEvent / DOM Events: soporte para comunicación entre módulos.
+  11. BrowserSync: soporte de desarrollo (no está en producción).
+  12. Mocha + Chai + Sinon: soporte de calidad (tests).
+
+
+¿Cuáles están MEJOR integradas?
+
+  - La Fetch API: usada correctamente en todos los DAOs, con mapeo
+    consistente, manejo de errores HTTP estructurado, y cobertura de
+    tests con Sinon stubs.
+  - El Proxy de app_state.js: integrado en todos los controllers, con
+    subscribe() usado en pwa.html para el loading overlay, y cubierto
+    por tests unitarios propios.
+  - Los Web Components: bien encapsulados, con lifecycle completo,
+    eventos personalizados con composed:true, y tests unitarios
+    individuales para cada componente.
+  - El Service Worker: estrategias claramente diferenciadas, limpieza
+    de versiones anteriores, y skipWaiting coordinado con pwa.html.
+
+
+¿Cuáles podrían CUESTIONARSE por redundantes o poco usadas?
+
+  - Web Worker (procesamiento.worker.js + worker-helper.js): bien
+    implementado pero no usado por ningún DAO activo. Es infraestructura
+    preparada que no tiene consumidores en el flujo principal.
+  - node-test-setup.cjs: shims para Node.js sin package.json que los
+    active. Existe pero no cumple ningún rol en la ejecución actual
+    de los tests.
+  - Los adaptadores de Chai (register-assert.js, register-should.js):
+    solo se usa register-expect en los tests. Los otros dos archivos
+    están disponibles pero sin uso.
+
+
+¿Cuál es la imagen real del stack tecnológico del proyecto?
+
+  NuevoIngresoWeb es una aplicación web moderna y coherente construida
+  sobre estándares del navegador sin frameworks externos. Su stack es:
+
+  RUNTIME: JavaScript ES6+ nativo + Web APIs del navegador
+  UI: Web Components (Custom Elements, Shadow DOM)
+  ESTADO: Proxy nativo de JavaScript
+  ROUTING: Hash-based con CustomEvents
+  PWA: Service Worker + Cache API + Web App Manifest
+  HTTP: Fetch API + AbortController + Promise.allSettled
+  PERSISTENCIA CLIENTE: localStorage (solo IDs)
+  SERVIDOR DE DESARROLLO: BrowserSync (global)
+  TESTING: Mocha + Chai + Sinon (archivos locales, runner en browser)
+
+  Es un stack válido, intencionalmente minimalista, sin dependencias de
+  npm ni build tools, que demuestra dominio de las Web APIs nativas del
+  navegador. La complejidad está en la organización del código (patrón BCE,
+  DAOs, controllers, entidades, infraestructura) más que en herramientas
+  de terceros. Eso es precisamente lo que lo hace defendible y comprensible
+  en un contexto académico.
+
+================================================================================
+FIN DE LA AUDITORÍA
+================================================================================
