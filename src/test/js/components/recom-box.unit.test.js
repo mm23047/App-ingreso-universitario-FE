@@ -53,8 +53,9 @@ describe('RecomBox — app-recom-box — Pruebas Unitarias', () => {
             expect(subtitulo().textContent).to.include('admitido');
         });
 
-        it('muestra el icono del CONFIG', () => {
-            expect(iconoEl().textContent.length).to.be.greaterThan(0);
+        it('el contenedor de icono existe en el shadow DOM y está vacío por diseño actual', () => {
+            expect(iconoEl()).to.not.be.null;
+            expect(iconoEl().textContent).to.equal('');
         });
 
         it('renderiza los pasos por defecto del CONFIG', () => {

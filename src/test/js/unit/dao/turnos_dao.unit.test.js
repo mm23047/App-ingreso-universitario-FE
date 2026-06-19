@@ -148,6 +148,43 @@ describe('TurnosDao - Pruebas Unitarias con Stubs', () => {
         });
     });
 
+    describe('Manejo de errores de red y valores por defecto', () => {
+        it('debe propagar TypeError cuando la red no responde en obtenerTurnos', async () => {
+            sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+            try {
+                await turnosDao.obtenerTurnos();
+                expect.fail();
+            } catch (error) {
+                expect(error).to.be.instanceOf(TypeError);
+            }
+        });
+
+        it('debe adjuntar httpStatus 500 al error cuando el servidor responde con error', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500, json: () => Promise.reject(new Error('Server Error')) });
+
+            try {
+                await turnosDao.obtenerTurnos();
+                expect.fail();
+            } catch (error) {
+                expect(error.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe aplicar valores por defecto cuando el payload no incluye campos', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve([{}]) });
+
+            const resultado = await turnosDao.obtenerTurnos();
+
+            expect(resultado[0].idTurnoExamen).to.be.null;
+            expect(resultado[0].nombreTurno).to.equal('');
+            expect(resultado[0].fecha).to.be.null;
+            expect(resultado[0].horaInicio).to.be.null;
+            expect(resultado[0].horaFin).to.be.null;
+            expect(resultado[0].pruebaAdmision).to.be.null;
+        });
+    });
+
     describe('Validación de URLs', () => {
         it('debe mantener URL consistente entre instancias', () => {
             const dao1 = new TurnosDao();
