@@ -105,15 +105,17 @@ describe('CarrerasElegidaController - Pruebas Unitarias', () => {
             expect(resultado).to.equal(mockElegida1);
         });
 
-        it('debe propagar error del DAO (409 carrera duplicada)', async () => {
-            sinon.stub(ctrl.carrerasElegidaDao, 'agregarCarrera')
-                .rejects(new Error('Error HTTP: 409'));
+        it('debe propagar error del DAO con httpStatus 409 (409 carrera duplicada)', async () => {
+            const errorConflicto = new Error('Error HTTP: 409');
+            errorConflicto.httpStatus = 409;
+            sinon.stub(ctrl.carrerasElegidaDao, 'agregarCarrera').rejects(errorConflicto);
 
             try {
                 await ctrl.agregarCarrera('uuid-insc-1', 'IC', 1);
                 expect.fail();
             } catch (e) {
                 expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(409);
             }
         });
 

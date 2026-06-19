@@ -156,17 +156,19 @@ describe('InscripcionesController - Pruebas Unitarias', () => {
 
     // ── inscribir — error DAO ────────────────────────────────────────────────
     describe('inscribir — errores del DAO', () => {
-        it('debe propagar error del DAO y restablecer store.loading', async () => {
+        it('debe propagar error del DAO con httpStatus 409 (ya inscrito) y restablecer store.loading', async () => {
             store.aspirante = { id: 'uuid-aspirante-1' };
             store.prueba    = mockPrueba;
-            sinon.stub(ctrl.aspirantesDao, 'crearInscripcion')
-                .rejects(new Error('Error HTTP: 409'));
+            const errorConflicto = new Error('Error HTTP: 409');
+            errorConflicto.httpStatus = 409;
+            sinon.stub(ctrl.aspirantesDao, 'crearInscripcion').rejects(errorConflicto);
 
             try {
                 await ctrl.inscribir();
                 expect.fail();
             } catch (e) {
                 expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(409);
                 expect(store.loading).to.be.false;
             }
         });
@@ -323,6 +325,22 @@ describe('InscripcionesController - Pruebas Unitarias', () => {
                 expect.fail();
             } catch (e) {
                 expect(e).to.be.instanceOf(Error);
+                expect(store.loading).to.be.false;
+            }
+        });
+
+        it('debe propagar error con httpStatus 409 cuando ya existe una inscripción activa y restablecer store.loading', async () => {
+            sinon.stub(ctrl.pruebasDao, 'obtenerActivas').resolves([mockPrueba]);
+            const errorConflicto = new Error('Error HTTP: 409');
+            errorConflicto.httpStatus = 409;
+            sinon.stub(ctrl.aspirantesDao, 'crearInscripcion').rejects(errorConflicto);
+
+            try {
+                await ctrl.inscribirConCarreras('uuid-aspirante-1', [{ idCarrera: 'IC', prioridad: 1 }]);
+                expect.fail();
+            } catch (e) {
+                expect(e).to.be.instanceOf(Error);
+                expect(e.httpStatus).to.equal(409);
                 expect(store.loading).to.be.false;
             }
         });

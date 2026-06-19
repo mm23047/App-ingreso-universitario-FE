@@ -161,6 +161,49 @@ describe('AppProcesoCard — app-proceso-card — Pruebas Unitarias', () => {
         });
     });
 
+    // ── Sanitización de sedes (anti-XSS) ───────────────────────────────────
+    describe('Sanitización de sedes (anti-XSS)', () => {
+        it('debe escapar una etiqueta <script> en el nombre de la sede sin ejecutarla', () => {
+            card.proceso = { ...procesoActivo, sedes: ['<script>alert("xss")</script>'] };
+            const chip = sr().querySelector('.ps-chip-sede');
+
+            expect(chip.textContent).to.equal('<script>alert("xss")</script>');
+            expect(chip.children.length).to.equal(0);
+            expect(chip.querySelector('script')).to.be.null;
+        });
+
+        it('no debe insertar ningún elemento <script> ejecutable en el shadow DOM', () => {
+            card.proceso = { ...procesoActivo, sedes: ['<script>alert(1)</script>'] };
+            const chip = sr().querySelector('.ps-chip-sede');
+
+            expect(sr().querySelectorAll('script').length).to.equal(0);
+            expect(chip.textContent).to.equal('<script>alert(1)</script>');
+        });
+
+        it('debe escapar comillas, ampersand y etiquetas en el nombre de la sede sin crear elementos hijos', () => {
+            card.proceso = { ...procesoActivo, sedes: ['Sede "Norte" & Cía <b>Negrita</b>'] };
+            const chip = sr().querySelector('.ps-chip-sede');
+
+            expect(chip.textContent).to.equal('Sede "Norte" & Cía <b>Negrita</b>');
+            expect(chip.children.length).to.equal(0);
+            expect(chip.querySelector('b')).to.be.null;
+        });
+
+        it('debe escapar cada sede de forma independiente cuando hay varias, incluyendo intentos de inyección vía atributo', () => {
+            card.proceso = {
+                ...procesoActivo,
+                sedes: ['<img src=x onerror=alert(1)>', 'Sede Segura']
+            };
+            const chips = [...sr().querySelectorAll('.ps-chip-sede')];
+
+            expect(chips).to.have.length(2);
+            expect(chips[0].children.length).to.equal(0);
+            expect(chips[0].querySelector('img')).to.be.null;
+            expect(chips[0].textContent).to.equal('<img src=x onerror=alert(1)>');
+            expect(chips[1].textContent).to.equal('Sede Segura');
+        });
+    });
+
     // ── Getter de proceso ─────────────────────────────────────────────────
     describe('Getter de proceso', () => {
         it('get proceso() debe retornar el mismo objeto que se asignó', () => {
