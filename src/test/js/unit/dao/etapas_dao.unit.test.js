@@ -101,6 +101,42 @@ describe('EtapasDao - Pruebas Unitarias con Stubs', () => {
         });
     });
 
+    describe('Manejo de errores de red y valores por defecto', () => {
+        it('debe propagar TypeError cuando la red no responde en obtenerTodas', async () => {
+            sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+            try {
+                await dao.obtenerTodas();
+                expect.fail();
+            } catch (error) {
+                expect(error).to.be.instanceOf(TypeError);
+            }
+        });
+
+        it('debe adjuntar httpStatus 500 al error cuando el servidor responde 500', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500 });
+
+            try {
+                await dao.obtenerTodas();
+                expect.fail();
+            } catch (error) {
+                expect(error.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe aplicar valores por defecto cuando el payload solo trae el nombre', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve([{ nombre: 'Etapa Sin Datos' }]) });
+
+            const resultado = await dao.obtenerTodas();
+
+            expect(resultado[0].idEtapaAdmision).to.be.null;
+            expect(resultado[0].puntajeMinimo).to.be.null;
+            expect(resultado[0].puntajeMaximo).to.be.null;
+            expect(resultado[0].descripcion).to.be.null;
+            expect(resultado[0].cantidadPreguntasRequeridas).to.be.null;
+        });
+    });
+
     describe('Métodos disponibles', () => {
         it('debe tener obtenerTodas', () => {
             expect(typeof dao.obtenerTodas).to.equal('function');

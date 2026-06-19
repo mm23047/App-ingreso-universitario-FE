@@ -172,6 +172,53 @@ describe('PreguntasDao - Pruebas Unitarias con Stubs', () => {
         });
     });
 
+    describe('Manejo de errores de red y valores por defecto', () => {
+        it('debe propagar TypeError cuando la red no responde en obtenerTodas', async () => {
+            sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+            try {
+                await preguntasDao.obtenerTodas();
+                expect.fail();
+            } catch (error) {
+                expect(error).to.be.instanceOf(TypeError);
+            }
+        });
+
+        it('debe adjuntar httpStatus 500 al error cuando el servidor responde 500', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500 });
+
+            try {
+                await preguntasDao.obtenerTodas();
+                expect.fail();
+            } catch (error) {
+                expect(error.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe aplicar valor por defecto null en tema cuando la pregunta no lo incluye', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 200,
+                json: () => Promise.resolve([{ idBancoPregunta: 'uuid-p1', enunciado: '¿Pregunta sin tema?' }])
+            });
+
+            const resultado = await preguntasDao.obtenerTodas();
+
+            expect(resultado[0].tema).to.be.null;
+        });
+
+        it('debe asignar idRespuestaGlobal null y esCorrecta false cuando la opción no los incluye', async () => {
+            sinon.stub(window, 'fetch').resolves({
+                status: 200,
+                json: () => Promise.resolve([{ idPreguntaOpcion: 'uuid-o1' }])
+            });
+
+            const resultado = await preguntasDao.obtenerOpcionesDePregunta('uuid-p1');
+
+            expect(resultado[0].idRespuestaGlobal).to.be.null;
+            expect(resultado[0].esCorrecta).to.be.false;
+        });
+    });
+
     describe('Validación de URLs', () => {
         it('debe mantener URL consistente entre instancias', () => {
             const dao1 = new PreguntasDao();

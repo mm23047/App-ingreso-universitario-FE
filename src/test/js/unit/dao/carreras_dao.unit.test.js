@@ -152,6 +152,39 @@ describe('CarrerasDao - Pruebas Unitarias con Stubs', () => {
         });
     });
 
+    describe('Manejo de errores de red y valores por defecto', () => {
+        it('debe propagar TypeError cuando la red no responde en obtenerTodas', async () => {
+            sinon.stub(window, 'fetch').rejects(new TypeError('Failed to fetch'));
+
+            try {
+                await carrerasDao.obtenerTodas();
+                expect.fail('Debería haber lanzado un error');
+            } catch (error) {
+                expect(error).to.be.instanceOf(TypeError);
+            }
+        });
+
+        it('debe adjuntar httpStatus 500 al error cuando el servidor responde 500', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 500, json: () => Promise.reject(new Error('Server Error')) });
+
+            try {
+                await carrerasDao.obtenerTodas();
+                expect.fail('Debería haber lanzado un error');
+            } catch (error) {
+                expect(error.httpStatus).to.equal(500);
+            }
+        });
+
+        it('debe aplicar valores por defecto cuando el payload no incluye campos', async () => {
+            sinon.stub(window, 'fetch').resolves({ status: 200, json: () => Promise.resolve([{}]) });
+
+            const resultado = await carrerasDao.obtenerTodas();
+
+            expect(resultado[0].idCarrera).to.equal('');
+            expect(resultado[0].nombreCatalogoCarrera).to.equal('');
+        });
+    });
+
     describe('Validación de URLs', () => {
         it('debe mantener URL consistente entre instancias', () => {
             const dao1 = new CarrerasDao();
