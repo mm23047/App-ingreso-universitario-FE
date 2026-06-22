@@ -1,7 +1,8 @@
+#
 #!/bin/sh
 # Genera env.js en el arranque del contenedor a partir de variables de
 # entorno, para que el frontend sepa a qué backend apuntar sin rebuild.
-# Si no se definen las variables, usa los mismos valores que estaban
+# Si no se defin en las variables, usa los mismos valores que estaban
 # hardcodeados antes en default_dao.js (mismo comportamiento por defecto).
 set -e
 
