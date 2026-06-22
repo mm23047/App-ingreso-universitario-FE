@@ -1,7 +1,13 @@
 class DefaultDao {
     constructor() {
-        const backendHost = window.location.hostname;
-        this.BASE_URL = `http://${backendHost}:9080/IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/`;
+        // window.APP_CONFIG (src/env.js) permite fijar el backend por ambiente
+        // sin tocar código. Si no está definido, se conserva el comportamiento
+        // original (hostname del navegador + puerto/path fijos).
+        const cfg = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
+        const backendHost = cfg.BACKEND_HOST || window.location.hostname;
+        const backendPort = cfg.BACKEND_PORT || '9080';
+        const backendPath = cfg.BACKEND_PATH || 'IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/';
+        this.BASE_URL = `http://${backendHost}:${backendPort}/${backendPath}`;
     }
 
     getBaseUrl() {

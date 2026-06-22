@@ -1,0 +1,8 @@
+{
+  "spec": [
+    "src/test/js/unit/**/*.test.js"
+  ],
+  "require": ["src/test/js/node-test-setup.cjs"],
+  "reporter": "spec",
+  "timeout": 5000
+}

@@ -2,17 +2,14 @@
 'use strict';
 
 global.window = global;
-global.dispatchEvent = () => {};
-global.addEventListener = () => {};
-global.removeEventListener = () => {};
 
-global.CustomEvent = class CustomEvent {
-    constructor(type, opts = {}) {
-        this.type   = type;
-        this.bubbles = opts.bubbles ?? false;
-        this.detail  = opts.detail  ?? null;
-    }
-};
+// Event/CustomEvent/EventTarget ya existen nativamente en Node.js v22 — se
+// delega en un EventTarget real para que addEventListener/dispatchEvent
+// (incluyendo soporte de { once: true }) se comporten como en el navegador.
+const _eventTarget = new EventTarget();
+global.addEventListener    = _eventTarget.addEventListener.bind(_eventTarget);
+global.removeEventListener = _eventTarget.removeEventListener.bind(_eventTarget);
+global.dispatchEvent       = _eventTarget.dispatchEvent.bind(_eventTarget);
 
 // localStorage en memoria (se limpia entre archivos via localStorage.clear())
 const _storage = new Map();
@@ -39,7 +36,10 @@ global.location = {
     hostname: 'localhost',
     _hash: '',
     get hash() { return this._hash; },
-    set hash(v) { this._hash = String(v); }
+    set hash(v) {
+        const value = String(v);
+        this._hash = value === '' || value.startsWith('#') ? value : `#${value}`;
+    }
 };
 
 // fetch ya existe en Node.js v22 — no hay que polyfillarlo
