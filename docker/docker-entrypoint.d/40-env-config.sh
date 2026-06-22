@@ -1,4 +1,3 @@
-#
 #!/bin/sh
 # Genera env.js en el arranque del contenedor a partir de variables de
 # entorno, para que el frontend sepa a qué backend apuntar sin rebuild.
