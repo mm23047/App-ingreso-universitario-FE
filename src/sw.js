@@ -27,7 +27,7 @@ const ASSETS_ESTATICOS = [
 ];
 
 /* Detecta llamadas a la API del backend */
-const API_PATTERN = /localhost:9080/;
+const API_PATTERN = /(localhost|host\.docker\.internal):9080/;
 const _esLlamadaAPI = (url) => API_PATTERN.test(url);
 
 /* Detecta archivos HTML: navegaciones directas O fetch() hacia .html */

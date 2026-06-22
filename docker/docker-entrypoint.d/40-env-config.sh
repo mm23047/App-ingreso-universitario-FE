@@ -5,7 +5,7 @@
 # hardcodeados antes en default_dao.js (mismo comportamiento por defecto).
 set -e
 
-BACKEND_HOST="${BACKEND_HOST:-localhost}"
+BACKEND_HOST="${BACKEND_HOST:-host.docker.internal}"
 BACKEND_PORT="${BACKEND_PORT:-9080}"
 BACKEND_PATH="${BACKEND_PATH:-IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/}"
 

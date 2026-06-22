@@ -19,9 +19,11 @@ pipeline {
         // Defaults para el contenedor de demo (stage "Deploy (demo)"). En
         // cmd.exe una variable no definida se expande literalmente como
         // "%BACKEND_HOST%" en vez de vacío, por eso deben tener un valor
-        // aquí siempre. Ajustar si el backend de referencia corre en otro
-        // host/puerto para esta demo.
-        BACKEND_HOST = 'localhost'
+        // aquí siempre. host.docker.internal es el nombre que Docker Desktop
+        // en Windows resuelve automáticamente hacia el host (donde corre el
+        // backend en el puerto 9080), sin requerir --add-host ni red Docker
+        // compartida entre frontend y backend.
+        BACKEND_HOST = 'host.docker.internal'
         BACKEND_PORT = '9080'
     }
 
