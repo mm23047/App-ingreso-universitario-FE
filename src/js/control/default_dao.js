@@ -7,7 +7,8 @@ class DefaultDao {
         const backendHost = cfg.BACKEND_HOST || window.location.hostname;
         const backendPort = cfg.BACKEND_PORT || '9080';
         const backendPath = cfg.BACKEND_PATH || 'IngresoUniversitarioTPI135-1.0-SNAPSHOT/resources/v1/';
-        this.BASE_URL = `http://${backendHost}:${backendPort}/${backendPath}`;
+        const normalizedPath = backendPath.endsWith('/') ? backendPath : `${backendPath}/`;
+        this.BASE_URL = `http://${backendHost}:${backendPort}/${normalizedPath}`;
     }
 
     getBaseUrl() {
