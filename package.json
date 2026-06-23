@@ -28,9 +28,11 @@
     "include": [
       "src/js/control/**",
       "src/js/entity/**",
-      "src/js/infra/app_state.js",
-      "src/js/infra/notificaciones.js",
-      "src/js/infra/router.js"
+      "src/js/infra/**",
+      "src/js/boundary/components/**"
+    ],
+    "exclude": [
+      "**/*.html"
     ],
     "reporter": ["text-summary", "lcov"],
     "report-dir": "coverage"
