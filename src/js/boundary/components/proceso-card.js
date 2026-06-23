@@ -25,8 +25,8 @@ const ICO_PIN = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
 
 function esc(s) {
     return String(s ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        .replaceAll(/&/g, '&amp;').replaceAll(/</g, '&lt;')
+        .replaceAll(/>/g, '&gt;').replaceAll(/"/g, '&quot;');
 }
 
 function fmtFecha(iso) {

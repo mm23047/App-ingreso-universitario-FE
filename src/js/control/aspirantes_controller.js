@@ -22,7 +22,7 @@ class AspirantesController {
             return { valido: false, mensaje: 'El DUI debe tener el formato 00000000-0' };
         }
         const _fechaNac = new Date(data.fechaNacimiento + 'T00:00:00');
-        if (isNaN(_fechaNac.getTime())) {
+        if (Number.isNaN(_fechaNac.getTime())) {
             return { valido: false, mensaje: 'La fecha de nacimiento no es válida' };
         }
         const _hoy = new Date();

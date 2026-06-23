@@ -89,11 +89,11 @@ class ContadorComponent extends HTMLElement {
     connectedCallback() {
         const inicial = this.getAttribute('inicial');
         if (inicial && !isNaN(inicial)) {
-            this.contador = parseInt(inicial);
+            this.contador = Number.parseInt(inicial);
         }
         const intervalo = this.getAttribute('intervalo');
         if (intervalo && !isNaN(intervalo)) {
-            this.velocidad = parseInt(intervalo);
+            this.velocidad = Number.parseInt(intervalo);
         }
         this._sincronizarDisplay();
         this.setupEventListeners();
@@ -107,11 +107,11 @@ class ContadorComponent extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue === newValue) return;
         if (name === 'inicial') {
-            this.contador = parseInt(newValue) || 0;
+            this.contador = Number.parseInt(newValue) || 0;
             this._sincronizarDisplay();
         }
         if (name === 'intervalo') {
-            this.velocidad = parseInt(newValue) || 1000;
+            this.velocidad = Number.parseInt(newValue) || 1000;
             this.detenerAutoIncremento();
             this.iniciarAutoIncremento();
         }
@@ -155,7 +155,7 @@ class ContadorComponent extends HTMLElement {
 
     reiniciar() {
         const inicial = this.getAttribute('inicial');
-        this.contador = (inicial && !isNaN(inicial)) ? parseInt(inicial) : 0;
+        this.contador = (inicial && !isNaN(inicial)) ? Number.parseInt(inicial) : 0;
         this.autoIncrementando = true;
         this.detenerAutoIncremento();
         this.iniciarAutoIncremento();
@@ -203,7 +203,7 @@ class ContadorComponent extends HTMLElement {
 
     setValor(valor) {
         if (!isNaN(valor)) {
-            this.contador = parseInt(valor);
+            this.contador = Number.parseInt(valor);
             this.actualizarDisplay();
         }
     }
