@@ -169,6 +169,11 @@ self.addEventListener('fetch', (event) => {
 
 /* ── MENSAJE desde el cliente: forzar activación inmediata ── */
 self.addEventListener('message', (event) => {
+    /* Verificación de origen (S2819): solo se procesan mensajes del mismo origen */
+    if (event.origin && event.origin !== self.location.origin) {
+        return;
+    }
+
     if (event.data === 'SKIP_WAITING') {
         console.log('[SW] SKIP_WAITING recibido → activando ahora');
         self.skipWaiting();
