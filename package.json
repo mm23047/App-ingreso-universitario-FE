@@ -11,7 +11,11 @@
     "test": "mocha",
     "test:junit": "mocha --reporter mocha-junit-reporter --reporter-options mochaFile=test-results/junit.xml",
     "test:integration:off": "mocha --no-config \"src/test/js/integration/server-off/**/*.test.js\" --require src/test/js/node-test-setup.cjs --timeout 5000",
+    "test:integration:on": "mocha --no-config \"src/test/js/integration/server-on/**/*.test.js\" --require src/test/js/node-test-setup.cjs --timeout 5000",
     "coverage": "c8 mocha",
+    "coverage:integration:off": "c8 --clean=true --temp-directory=coverage/integration/.tmp --reporter=none npm run test:integration:off",
+    "coverage:integration:on": "c8 --clean=false --temp-directory=coverage/integration/.tmp --reporter=none npm run test:integration:on",
+    "coverage:integration": "c8 report --temp-directory=coverage/integration/.tmp --report-dir=coverage/integration --reporter=text-summary --reporter=lcov",
     "build": "node scripts/build.js"
   },
   "devDependencies": {

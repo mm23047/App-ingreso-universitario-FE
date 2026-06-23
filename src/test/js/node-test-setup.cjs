@@ -42,5 +42,14 @@ global.location = {
     }
 };
 
+// window.APP_CONFIG — mismo mecanismo que src/env.js / docker-entrypoint.d/40-env-config.sh,
+// para que Jenkins pueda apuntar las suites de integración (server-off/server-on) a un
+// backend distinto sin tocar código, vía las variables de entorno BACKEND_HOST/PORT/PATH.
+global.window.APP_CONFIG = {
+    ...(process.env.BACKEND_HOST && { BACKEND_HOST: process.env.BACKEND_HOST }),
+    ...(process.env.BACKEND_PORT && { BACKEND_PORT: process.env.BACKEND_PORT }),
+    ...(process.env.BACKEND_PATH && { BACKEND_PATH: process.env.BACKEND_PATH })
+};
+
 // fetch ya existe en Node.js v22 — no hay que polyfillarlo
 // sinon.stub(window, 'fetch') lo reemplazará en cada test
