@@ -1,7 +1,7 @@
 {
   "name": "nuevo-ingreso-web-frontend",
   "version": "1.0.0",
-  "description": "Frontend SPA (Web Components nativos + PWA) del Sistema de Ingreso Universitario",
+  "description": "Frontend (Web Components nativos + PWA) del Sistema de Ingreso Universitario",
   "private": true,
   "type": "module",
   "engines": {
